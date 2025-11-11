@@ -1,23 +1,33 @@
 package com.example.fastbite
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun AuthScreen(
-    onLoginSuccess: (String) -> Unit // ✅ добавили параметр
+    onLoginSuccess: (String) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var isRegistering by remember { mutableStateOf(false) }
+    var confirmPassword by remember { mutableStateOf("") }
+    var isRegistering by remember { mutableStateOf(true) } // сначала регистрация
     var errorMessage by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
+
+    val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -47,20 +57,74 @@ fun AuthScreen(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Пароль") },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                            contentDescription = "Toggle password visibility"
+                        )
+                    }
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth()
             )
+
+            if (isRegistering) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it },
+                    label = { Text("Повторите пароль") },
+                    visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                            Icon(
+                                imageVector = if (confirmPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                contentDescription = "Toggle password visibility"
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = {
-                    if (email.isNotBlank() && password.isNotBlank()) {
-                        // Здесь можно добавить проверку через Firebase или локальную БД
-                        onLoginSuccess(email) // ✅ теперь MainActivity узнает об успешном входе
+                    errorMessage = ""
+                    if (email.isBlank() || password.isBlank() || (isRegistering && confirmPassword.isBlank())) {
+                        errorMessage = "Заполните все поля"
+                        return@Button
+                    }
+
+                    if (isRegistering) {
+                        if (password != confirmPassword) {
+                            errorMessage = "Пароли не совпадают"
+                            return@Button
+                        }
+
+                        // Регистрация Firebase
+                        auth.createUserWithEmailAndPassword(email, password)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    onLoginSuccess(email)
+                                } else {
+                                    errorMessage = task.exception?.message ?: "Ошибка регистрации"
+                                }
+                            }
                     } else {
-                        errorMessage = "Введите email и пароль"
+                        // Вход Firebase
+                        auth.signInWithEmailAndPassword(email, password)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    onLoginSuccess(email)
+                                } else {
+                                    errorMessage = "Аккаунт не найден. Зарегистрируйтесь"
+                                }
+                            }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -70,7 +134,10 @@ fun AuthScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            TextButton(onClick = { isRegistering = !isRegistering }) {
+            TextButton(onClick = {
+                isRegistering = !isRegistering
+                errorMessage = ""
+            }) {
                 Text(
                     text = if (isRegistering)
                         "Уже есть аккаунт? Войти"

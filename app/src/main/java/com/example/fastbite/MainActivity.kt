@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.fastbite.ui.theme.FastBiteTheme
+import com.google.firebase.FirebaseApp // <-- импорт Firebase
 
 sealed class BottomNavItem(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     object Profile : BottomNavItem("Профиль", Icons.Default.Person)
@@ -25,10 +26,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // --- Инициализация Firebase ---
+        FirebaseApp.initializeApp(this)
+
         setContent {
             FastBiteTheme {
 
-                // ✅ Чтение сохранённого email
                 val sharedPrefs = getSharedPreferences("FastBitePrefs", Context.MODE_PRIVATE)
                 var loggedInUser by remember {
                     mutableStateOf(sharedPrefs.getString("user_email", null))
@@ -44,7 +47,6 @@ class MainActivity : ComponentActivity() {
                         AuthScreen(onLoginSuccess = { email ->
                             loggedInUser = email
 
-                            // ✅ Сохраняем email при входе
                             sharedPrefs.edit()
                                 .putString("user_email", email)
                                 .apply()
@@ -82,7 +84,6 @@ class MainActivity : ComponentActivity() {
                                     is BottomNavItem.Profile -> ProfileScreen(
                                         userEmail = loggedInUser!!,
                                         onLogout = {
-                                            // ✅ Удаляем email при выходе
                                             sharedPrefs.edit()
                                                 .remove("user_email")
                                                 .apply()
