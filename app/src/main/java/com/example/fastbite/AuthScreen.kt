@@ -1,7 +1,9 @@
 package com.example.fastbite
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -9,151 +11,162 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun AuthScreen(
-    onLoginSuccess: (String, String) -> Unit // email и роль
+    navToSeller: (email: String, role: String) -> Unit,
+    navToUser: (email: String, role: String) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var isRegistering by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf("") }
+    var isRegistering by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var isSeller by remember { mutableStateOf(false) }
 
-    val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+    val scrollState = rememberScrollState()
+
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp)
+            .verticalScroll(scrollState)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
         ) {
+
             Text(
                 text = if (isRegistering) "Регистрация" else "Вход",
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 28.sp
+                ),
+                color = MaterialTheme.colorScheme.primary
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Пароль") },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                            contentDescription = "Toggle password visibility"
-                        )
-                    }
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                placeholder = { Text("example@mail.com") },
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = {
-                    errorMessage = ""
-                    if (email.isBlank() || password.isBlank()) {
-                        errorMessage = "Заполните все поля"
-                        return@Button
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Пароль") },
+                placeholder = { Text("Минимум 6 символов") },
+                singleLine = true,
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    val icon = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(imageVector = icon, contentDescription = null)
                     }
-
-                    if (isRegistering) {
-                        // Регистрация пользователя с ролью user
-                        auth.createUserWithEmailAndPassword(email, password)
-                            .addOnCompleteListener { task ->
-                                if (task.isSuccessful) {
-                                    val user = task.result?.user
-                                    if (user != null) {
-                                        val data = hashMapOf("role" to "user")
-                                        db.collection("users").document(user.uid)
-                                            .set(data)
-                                            .addOnSuccessListener {
-                                                onLoginSuccess(user.email ?: "", "user")
-                                            }
-                                            .addOnFailureListener {
-                                                errorMessage = "Ошибка при сохранении роли"
-                                            }
-                                    } else {
-                                        errorMessage = "Не удалось получить пользователя после регистрации"
-                                    }
-                                } else {
-                                    errorMessage = getAuthErrorMessage(task.exception!!)
-                                }
-                            }
-                    } else {
-                        // Вход
-                        auth.signInWithEmailAndPassword(email, password)
-                            .addOnCompleteListener { task ->
-                                if (task.isSuccessful) {
-                                    val user = auth.currentUser
-                                    if (user != null) {
-                                        db.collection("users").document(user.uid).get()
-                                            .addOnSuccessListener { document ->
-                                                val role = document.getString("role") ?: "user"
-                                                onLoginSuccess(user.email ?: "", role)
-                                            }
-                                            .addOnFailureListener {
-                                                errorMessage = "Ошибка при получении роли"
-                                            }
-                                    } else {
-                                        errorMessage = "Пользователь не найден"
-                                    }
-                                } else {
-                                    errorMessage = getAuthErrorMessage(task.exception!!)
-                                }
-                            }
-                    }
-
                 },
                 modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (isRegistering) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Checkbox(
+                        checked = isSeller,
+                        onCheckedChange = { isSeller = it }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Зарегистрироваться как ресторан", fontSize = 16.sp)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            Button(
+                onClick = {
+                    error = ""
+                    if (isRegistering) {
+                        val role = if (isSeller) "seller" else "user"
+                        auth.createUserWithEmailAndPassword(email, password)
+                            .addOnSuccessListener {
+                                val uid = it.user!!.uid
+                                db.collection("users").document(uid)
+                                    .set(mapOf("role" to role, "email" to email))
+                                    .addOnSuccessListener {
+                                        if (role == "seller") navToSeller(email, role)
+                                        else navToUser(email, role)
+                                    }
+                                    .addOnFailureListener { e -> error = e.message ?: "" }
+                            }
+                            .addOnFailureListener { e -> error = e.message ?: "" }
+                    } else {
+                        auth.signInWithEmailAndPassword(email, password)
+                            .addOnSuccessListener {
+                                val uid = auth.currentUser!!.uid
+                                db.collection("users").document(uid).get()
+                                    .addOnSuccessListener { doc ->
+                                        val role = doc.getString("role") ?: "user"
+                                        if (role == "seller") navToSeller(email, role)
+                                        else navToUser(email, role)
+                                    }
+                                    .addOnFailureListener { e -> error = e.message ?: "" }
+                            }
+                            .addOnFailureListener { e -> error = e.message ?: "" }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
             ) {
-                Text(text = if (isRegistering) "Зарегистрироваться" else "Войти")
+                Text(if (isRegistering) "Зарегистрироваться" else "Войти", fontSize = 18.sp)
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            TextButton(onClick = { isRegistering = !isRegistering }) {
-                Text(if (isRegistering) "Уже есть аккаунт? Войти" else "Нет аккаунта? Зарегистрироваться")
+            TextButton(
+                onClick = { isRegistering = !isRegistering },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text(
+                    text = if (isRegistering) "Есть аккаунт? Войти" else "Нет аккаунта? Регистрация",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
 
-            if (errorMessage.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
+            if (error.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
             }
         }
-    }
-}
-
-private fun getAuthErrorMessage(e: Exception): String {
-    return when {
-        e.message?.contains("ERROR_INVALID_EMAIL") == true -> "Неверный формат email"
-        e.message?.contains("ERROR_EMAIL_ALREADY_IN_USE") == true -> "Этот email уже используется"
-        e.message?.contains("ERROR_WEAK_PASSWORD") == true -> "Пароль должен содержать минимум 6 символов"
-        e.message?.contains("ERROR_OPERATION_NOT_ALLOWED") == true -> "Регистрация по email отключена в Firebase"
-        e.message?.contains("ERROR_TOO_MANY_REQUESTS") == true -> "Слишком много попыток. Попробуйте позже"
-        else -> "Ошибка: ${e.localizedMessage}"
     }
 }
