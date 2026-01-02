@@ -14,14 +14,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.*
 import com.example.fastbite.ui.theme.FastBiteTheme
 import com.google.firebase.FirebaseApp
 
+// =================== USER BOTTOM NAV ===================
 sealed class BottomNavItem(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    object Profile : BottomNavItem("Профиль", Icons.Default.Person)
-    object Cart : BottomNavItem("Корзина", Icons.Default.ShoppingCart)
     object Menu : BottomNavItem("Меню", Icons.Default.Restaurant)
+    object Cart : BottomNavItem("Корзина", Icons.Default.ShoppingCart)
+    object Profile : BottomNavItem("Профиль", Icons.Default.Person)
 }
+
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,32 +41,28 @@ class MainActivity : ComponentActivity() {
                 var loggedInRole by remember { mutableStateOf(sharedPrefs.getString("user_role", null)) }
 
                 var selectedUserItem by remember { mutableStateOf<BottomNavItem>(BottomNavItem.Menu) }
-                var selectedSellerItem by remember { mutableStateOf<SellerBottomNavItem>(
-                    SellerBottomNavItem.Menu) }
+                var selectedSellerItem by remember { mutableStateOf<SellerBottomNavItem>(SellerBottomNavItem.Menu) }
 
                 if (loggedInEmail == null || loggedInRole == null) {
                     AuthScreen(
                         navToUser = { email, role ->
                             loggedInEmail = email
                             loggedInRole = role
-                            sharedPrefs.edit()
-                                .putString("user_email", email)
-                                .putString("user_role", role)
-                                .apply()
+                            sharedPrefs.edit().putString("user_email", email)
+                                .putString("user_role", role).apply()
                         },
                         navToSeller = { email, role ->
                             loggedInEmail = email
                             loggedInRole = role
-                            sharedPrefs.edit()
-                                .putString("user_email", email)
-                                .putString("user_role", role)
-                                .apply()
+                            sharedPrefs.edit().putString("user_email", email)
+                                .putString("user_role", role).apply()
                         }
                     )
                 } else {
+
                     when (loggedInRole) {
 
-                        // ---------------- USER MODE ----------------
+                        // ================= USER =================
                         "user" -> {
                             Scaffold(
                                 bottomBar = {
@@ -81,24 +81,21 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 }
-                            ) { innerPadding ->
+                            ) { padding ->
                                 Box(
                                     modifier = Modifier
-                                        .padding(innerPadding)
-                                        .padding(16.dp)
+                                        .padding(padding)
                                         .fillMaxSize()
                                 ) {
                                     when (selectedUserItem) {
                                         is BottomNavItem.Menu -> MenuScreen()
-                                        is BottomNavItem.Cart -> CartScreen(onNavigateToMenu = {
+                                        is BottomNavItem.Cart -> CartScreen {
                                             selectedUserItem = BottomNavItem.Menu
-                                        })
+                                        }
                                         is BottomNavItem.Profile -> ProfileScreen(
                                             userEmail = loggedInEmail!!,
                                             onLogout = {
-                                                sharedPrefs.edit()
-                                                    .clear()
-                                                    .apply()
+                                                sharedPrefs.edit().clear().apply()
                                                 loggedInEmail = null
                                                 loggedInRole = null
                                             }
@@ -108,8 +105,11 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        // ---------------- SELLER MODE ----------------
+                        // ================= SELLER =================
                         "seller" -> {
+
+                            val navController = rememberNavController()
+
                             Scaffold(
                                 bottomBar = {
                                     NavigationBar {
@@ -120,24 +120,54 @@ class MainActivity : ComponentActivity() {
                                         ).forEach { item ->
                                             NavigationBarItem(
                                                 selected = selectedSellerItem == item,
-                                                onClick = { selectedSellerItem = item },
+                                                onClick = {
+                                                    selectedSellerItem = item
+                                                    when (item) {
+                                                        is SellerBottomNavItem.Menu -> navController.navigate("menu") {
+                                                            popUpTo("menu") { inclusive = true }
+                                                        }
+                                                        is SellerBottomNavItem.Orders -> navController.navigate("orders") {
+                                                            popUpTo("orders") { inclusive = true }
+                                                        }
+                                                        is SellerBottomNavItem.Profile -> navController.navigate("profile") {
+                                                            popUpTo("profile") { inclusive = true }
+                                                        }
+                                                    }
+                                                },
                                                 icon = { Icon(item.icon, contentDescription = item.title) },
                                                 label = { Text(item.title) }
                                             )
                                         }
                                     }
                                 }
-                            ) { innerPadding ->
-                                Box(
-                                    modifier = Modifier
-                                        .padding(innerPadding)
-                                        .padding(16.dp)
-                                        .fillMaxSize()
+                            ) { padding ->
+
+                                NavHost(
+                                    navController = navController,
+                                    startDestination = "menu",
+                                    modifier = Modifier.padding(padding)
                                 ) {
-                                    when (selectedSellerItem) {
-                                        is SellerBottomNavItem.Menu -> SellerMenuScreen()
-                                        is SellerBottomNavItem.Orders -> SellerOrdersScreen()
-                                        is SellerBottomNavItem.Profile -> SellerProfileScreen(
+
+                                    composable("menu") {
+                                        SellerMenuScreen(
+                                            currentUserEmail = loggedInEmail!!,
+                                            onAddDishClick = { navController.navigate("add_dish") }
+                                        )
+                                    }
+
+                                    composable("add_dish") {
+                                        AddDishScreen(
+                                            currentUserEmail = loggedInEmail!!,
+                                            onBack = { navController.popBackStack() }
+                                        )
+                                    }
+
+                                    composable("orders") {
+                                        SellerOrdersScreen()
+                                    }
+
+                                    composable("profile") {
+                                        SellerProfileScreen(
                                             restaurantName = "Мой ресторан",
                                             email = loggedInEmail!!,
                                             onLogout = {
@@ -152,7 +182,10 @@ class MainActivity : ComponentActivity() {
                         }
 
                         else -> {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text("Неизвестная роль")
                             }
                         }
