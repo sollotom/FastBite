@@ -13,6 +13,18 @@
         android:theme="@style/Theme.FastBite"
         tools:targetApi="31">
         <activity
+            android:name=".EditDishDialog"
+            android:exported="false" />
+        <activity
+            android:name=".Dish"
+            android:exported="false" />
+        <activity
+            android:name=".AppNavigation"
+            android:exported="false" />
+        <activity
+            android:name=".AddDishScreen"
+            android:exported="false" />
+        <activity
             android:name=".SellerBottomNavItem"
             android:exported="false" />
         <activity
