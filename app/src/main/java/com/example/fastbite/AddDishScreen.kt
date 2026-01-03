@@ -39,7 +39,6 @@ fun AddDishScreen(
     var addOns by remember { mutableStateOf("") }
     var addOnsPrice by remember { mutableStateOf("") }
     var availability by remember { mutableStateOf(true) }
-    var rating by remember { mutableStateOf("") }
     var portions by remember { mutableStateOf("") }
     var costPrice by remember { mutableStateOf("") }
     var discount by remember { mutableStateOf("") }
@@ -85,7 +84,11 @@ fun AddDishScreen(
                         addOns = addOns,
                         addOnsPrice = addOnsPrice,
                         availability = availability,
-                        rating = rating,
+
+                        // Рейтинг по умолчанию не задаем — он формируется из отзывов
+                        ratingAverage = 0.0,
+                        ratingCount = 0L,
+
                         portions = portions,
                         costPrice = costPrice,
                         discount = discount,
@@ -226,13 +229,6 @@ fun AddDishScreen(
                     Checkbox(checked = availability, onCheckedChange = { availability = it })
                     Text("Доступно")
                 }
-
-                OutlinedTextField(
-                    value = rating,
-                    onValueChange = { rating = it },
-                    label = { Text("Рейтинг") },
-                    modifier = Modifier.fillMaxWidth()
-                )
 
                 OutlinedTextField(
                     value = portions,

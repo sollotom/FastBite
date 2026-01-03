@@ -17,6 +17,7 @@ fun EditDishDialog(
     onDismiss: () -> Unit,
     onSave: (Dish) -> Unit
 ) {
+    // ====== ПЕРЕМЕННЫЕ СОСТОЯНИЯ ======
     var name by remember { mutableStateOf(dish.name) }
     var price by remember { mutableStateOf(dish.price) }
     var description by remember { mutableStateOf(dish.description) }
@@ -35,11 +36,13 @@ fun EditDishDialog(
     var addOns by remember { mutableStateOf(dish.addOns) }
     var addOnsPrice by remember { mutableStateOf(dish.addOnsPrice) }
     var availability by remember { mutableStateOf(dish.availability) }
-    var rating by remember { mutableStateOf(dish.rating) }
     var portions by remember { mutableStateOf(dish.portions) }
     var costPrice by remember { mutableStateOf(dish.costPrice) }
     var discount by remember { mutableStateOf(dish.discount) }
     var popular by remember { mutableStateOf(dish.popular) }
+
+    // Рейтинг (редактируем как строку, потом преобразуем в Double)
+    var ratingAverage by remember { mutableStateOf(dish.ratingAverage.toString()) }
 
     var error by remember { mutableStateOf("") }
 
@@ -84,7 +87,7 @@ fun EditDishDialog(
                     Text("Доступно")
                 }
 
-                OutlinedTextField(value = rating, onValueChange = { rating = it }, label = { Text("Рейтинг") })
+                OutlinedTextField(value = ratingAverage, onValueChange = { ratingAverage = it }, label = { Text("Рейтинг") })
                 OutlinedTextField(value = portions, onValueChange = { portions = it }, label = { Text("Порции") })
                 OutlinedTextField(value = costPrice, onValueChange = { costPrice = it }, label = { Text("Себестоимость") })
                 OutlinedTextField(value = discount, onValueChange = { discount = it }, label = { Text("Скидка") })
@@ -105,6 +108,7 @@ fun EditDishDialog(
                     error = "Заполните обязательные поля"
                     return@TextButton
                 }
+
                 val updatedDish = dish.copy(
                     name = name,
                     price = price,
@@ -124,12 +128,14 @@ fun EditDishDialog(
                     addOns = addOns,
                     addOnsPrice = addOnsPrice,
                     availability = availability,
-                    rating = rating,
+                    ratingAverage = ratingAverage.toDoubleOrNull() ?: 0.0,
+                    ratingCount = dish.ratingCount,
                     portions = portions,
                     costPrice = costPrice,
                     discount = discount,
                     popular = popular
                 )
+
                 onSave(updatedDish)
             }) {
                 Text("Сохранить")

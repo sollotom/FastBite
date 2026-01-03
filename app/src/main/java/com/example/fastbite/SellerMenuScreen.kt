@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,11 +26,12 @@ fun SellerMenuScreen(
     onAddDishClick: () -> Unit
 ) {
     val db = Firebase.firestore
+
     var dishes by remember { mutableStateOf(listOf<Dish>()) }
     var dishToEdit by remember { mutableStateOf<Dish?>(null) }
     var showDeleteDialog by remember { mutableStateOf<Dish?>(null) }
 
-    // Загрузка данных
+    // Загрузка блюд
     LaunchedEffect(currentUserEmail) {
         db.collection("dishes")
             .whereEqualTo("owner", currentUserEmail)
@@ -55,7 +58,11 @@ fun SellerMenuScreen(
                         addOns = it.getString("addOns") ?: "",
                         addOnsPrice = it.getString("addOnsPrice") ?: "",
                         availability = it.getBoolean("availability") ?: true,
-                        rating = it.getString("rating") ?: "",
+
+                        // ⭐ рейтинг ТОЛЬКО от пользователей
+                        ratingAverage = it.getDouble("ratingAverage") ?: 0.0,
+                        ratingCount = it.getLong("ratingCount") ?: 0L,
+
                         portions = it.getString("portions") ?: "",
                         costPrice = it.getString("costPrice") ?: "",
                         discount = it.getString("discount") ?: "",
@@ -69,9 +76,8 @@ fun SellerMenuScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 16.dp, start = 12.dp, end = 12.dp)
+            .padding(12.dp)
     ) {
-        // Заголовок
         Text(
             text = "Ваше меню",
             style = MaterialTheme.typography.headlineMedium,
@@ -80,13 +86,10 @@ fun SellerMenuScreen(
 
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 80.dp),
+                contentPadding = PaddingValues(bottom = 90.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(dishes) { dish ->
-                    // Серый полупрозрачный фон для блока
                     Card(
                         shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(6.dp),
@@ -94,11 +97,8 @@ fun SellerMenuScreen(
                             .fillMaxWidth()
                             .background(Color.Gray.copy(alpha = 0.2f))
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .padding(12.dp)
-                        ) {
-                            // Изображение блюда
+                        Column(modifier = Modifier.padding(12.dp)) {
+
                             AsyncImage(
                                 model = dish.photoUrl,
                                 contentDescription = dish.name,
@@ -109,13 +109,11 @@ fun SellerMenuScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Название и цена в одной строке
+                            // Название + цена
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = dish.name,
@@ -128,18 +126,43 @@ fun SellerMenuScreen(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
 
-                            // Кнопки редактирования и удаления
+                            // ⭐⭐⭐⭐⭐ рейтинг (НЕ редактируется)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                val filledStars = dish.ratingAverage.toInt()
+
+                                repeat(5) { index ->
+                                    Icon(
+                                        imageVector = if (index < filledStars)
+                                            Icons.Filled.Star
+                                        else
+                                            Icons.Outlined.Star,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFFC107)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(6.dp))
+
+                                Text(
+                                    text = "(${dish.ratingCount})",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.DarkGray
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Кнопки
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.End
                             ) {
                                 IconButton(onClick = { dishToEdit = dish }) {
-                                    Icon(
-                                        Icons.Default.Edit,
-                                        contentDescription = "Редактировать"
-                                    )
+                                    Icon(Icons.Default.Edit, contentDescription = "Редактировать")
                                 }
 
                                 IconButton(onClick = { showDeleteDialog = dish }) {
@@ -155,7 +178,6 @@ fun SellerMenuScreen(
                 }
             }
 
-            // Кнопка "Добавить блюдо"
             Button(
                 onClick = onAddDishClick,
                 modifier = Modifier
@@ -168,7 +190,7 @@ fun SellerMenuScreen(
         }
     }
 
-    // Диалог удаления
+    // Удаление блюда
     showDeleteDialog?.let { dish ->
         AlertDialog(
             onDismissRequest = { showDeleteDialog = null },
@@ -184,23 +206,9 @@ fun SellerMenuScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = null }) { Text("Отмена") }
-            }
-        )
-    }
-
-    // Редактирование блюда
-    dishToEdit?.let { dish ->
-        EditDishDialog(
-            dish = dish,
-            onDismiss = { dishToEdit = null },
-            onSave = { updatedDish ->
-                db.collection("dishes").document(dish.id)
-                    .set(updatedDish)
-                    .addOnSuccessListener {
-                        dishes = dishes.map { if (it.id == dish.id) updatedDish.copy(id = dish.id) else it }
-                        dishToEdit = null
-                    }
+                TextButton(onClick = { showDeleteDialog = null }) {
+                    Text("Отмена")
+                }
             }
         )
     }
