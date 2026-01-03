@@ -89,9 +89,11 @@
     <inspection_tool class="AndroidLintCoarseFineLocation" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintCommitPrefEdits" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintCommitTransaction" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="AndroidLintComposableDestinationInComposeScope" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintComposableLambdaParameterNaming" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintComposableLambdaParameterPosition" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintComposableNaming" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="AndroidLintComposableNavGraphInComposeScope" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintCompositionLocalNaming" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintConstantLocale" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintContentDescription" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -110,6 +112,7 @@
     <inspection_tool class="AndroidLintCutPasteId" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintDataBindingWithoutKapt" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintDataExtractionRules" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="AndroidLintDeepLinkInActivityDestination" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintDefaultLocale" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintDeletedProvider" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintDeprecated" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -135,6 +138,7 @@
     <inspection_tool class="AndroidLintEasterEgg" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintEditedTargetSdkVersion" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintEllipsizeMaxLines" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="AndroidLintEmptyNavDeepLink" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintEmptySuperCall" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintEnforceUTF8" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintEnqueueWork" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -474,6 +478,7 @@
     <inspection_tool class="AndroidLintUnnecessaryRequiredFeature" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintUnprotectedSMSBroadcastReceiver" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintUnrememberedAnimatable" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="AndroidLintUnrememberedGetBackStackEntry" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintUnrememberedMutableInteractionSource" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintUnrememberedMutableState" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintUnsafeDynamicallyLoadedCode" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -1463,7 +1468,7 @@
     <inspection_tool class="IncrementDecrementUsedAsExpression" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="IndexOfReplaceableByContains" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="InfiniteLoopStatement" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="InfiniteRecursion" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="InfiniteRecursion" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="InfixCallToOrdinary" enabled="true" level="INFORMATION" enabled_by_default="true" />
     <inspection_tool class="InjectedReferences" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="InjectionNotApplicable" enabled="true" level="ERROR" enabled_by_default="true" />
