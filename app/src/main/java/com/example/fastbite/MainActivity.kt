@@ -17,6 +17,11 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.*
 import com.example.fastbite.ui.theme.FastBiteTheme
 import com.google.firebase.FirebaseApp
+import com.example.fastbite.SellerMenuScreen
+
+import com.example.fastbite.AddDishScreen
+import com.example.fastbite.SellerOrdersScreen
+import com.example.fastbite.SellerProfileScreen
 
 // =================== USER BOTTOM NAV ===================
 sealed class BottomNavItem(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
@@ -36,7 +41,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             FastBiteTheme {
-
                 var loggedInEmail by remember { mutableStateOf(sharedPrefs.getString("user_email", null)) }
                 var loggedInRole by remember { mutableStateOf(sharedPrefs.getString("user_role", null)) }
 
@@ -59,7 +63,6 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 } else {
-
                     when (loggedInRole) {
 
                         // ================= USER =================
@@ -168,8 +171,7 @@ class MainActivity : ComponentActivity() {
 
                                     composable("profile") {
                                         SellerProfileScreen(
-                                            restaurantName = "Мой ресторан",
-                                            email = loggedInEmail!!,
+                                            currentUserEmail = loggedInEmail!!,
                                             onLogout = {
                                                 sharedPrefs.edit().clear().apply()
                                                 loggedInEmail = null

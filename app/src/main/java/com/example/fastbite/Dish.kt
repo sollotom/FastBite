@@ -20,11 +20,8 @@ data class Dish(
     val addOns: String = "",
     val addOnsPrice: String = "",
     val availability: Boolean = true,
-
-    // ⭐ РЕЙТИНГ (ТОЛЬКО ПОЛЬЗОВАТЕЛИ)
     val ratingAverage: Double = 0.0,
     val ratingCount: Long = 0,
-
     val portions: String = "",
     val costPrice: String = "",
     val discount: String = "",
