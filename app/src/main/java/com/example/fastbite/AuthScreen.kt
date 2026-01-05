@@ -20,9 +20,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
-fun AuthScreen(
-    navToSeller: (email: String, role: String) -> Unit,
-    navToUser: (email: String, role: String) -> Unit
+fun AuthScreenNew(
+    navToUser: (email: String, role: String) -> Unit,
+    navToSeller: (email: String, role: String) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
