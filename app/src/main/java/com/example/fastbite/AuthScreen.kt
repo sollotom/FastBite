@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -21,9 +20,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
-fun AuthScreen(
-    navToSeller: (email: String, role: String) -> Unit,
-    navToUser: (email: String, role: String) -> Unit
+fun AuthScreenNew(
+    navToUser: (email: String, role: String) -> Unit,
+    navToSeller: (email: String, role: String) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -34,7 +33,6 @@ fun AuthScreen(
 
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
-
     val scrollState = rememberScrollState()
 
     Surface(
@@ -80,7 +78,7 @@ fun AuthScreen(
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
-                    val icon = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                    val icon = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(imageVector = icon, contentDescription = null)
                     }
