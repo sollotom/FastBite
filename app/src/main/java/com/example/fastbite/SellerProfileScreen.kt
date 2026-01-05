@@ -153,14 +153,19 @@ fun SellerProfileScreen(
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.background(Color.Black.copy(0.4f), CircleShape)
+                ) {
+                    Icon(Icons.Default.ArrowBack, null, tint = Color.White)
+                }
 
+                Spacer(Modifier.width(12.dp))
 
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        if (restaurantIcon.isNotEmpty())
-                            restaurantIcon
-                        else "https://via.placeholder.com/150"
-                    ),
+                AsyncImage(
+                    model = if (restaurantIcon.isNotEmpty())
+                        restaurantIcon
+                    else "https://via.placeholder.com/150",
                     contentDescription = null,
                     modifier = Modifier
                         .size(60.dp)
@@ -485,7 +490,19 @@ fun SellerProfileScreen(
         val dishWithReviews = selectedDish!!
         FullScreenDishDialog(
             dishWithReviews = dishWithReviews,
-            onClose = { selectedDish = null }
+            restaurantName = restaurantName,
+            restaurantIcon = restaurantIcon,
+            restaurantRating = restaurantRating,
+            restaurantRatingCount = restaurantRatingCount,
+            onClose = { selectedDish = null },
+            onProfileClick = {
+                // Так как вы уже в профиле ресторана, можно:
+                // 1. Закрыть диалог
+                selectedDish = null
+                // 2. Показать редактирование профиля
+                isEditing = true
+                // 3. Или просто ничего не делать, если вы уже в профиле
+            }
         )
     }
 
@@ -515,115 +532,119 @@ fun DishCard(
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Row(modifier = Modifier.padding(12.dp)) {
-            AsyncImage(
-                model = dish.photoUrl.ifEmpty { "https://via.placeholder.com/120" },
-                contentDescription = null,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    dish.name,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    maxLines = 1
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row {
+                AsyncImage(
+                    model = dish.photoUrl.ifEmpty { "https://via.placeholder.com/120" },
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
                 )
 
-                val discountPercentage = dish.discount.toDoubleOrNull() ?: 0.0
-                val originalPrice = dish.price.toDoubleOrNull() ?: 0.0
-                val discountedPrice = if (discountPercentage > 0)
-                    originalPrice * (1 - discountPercentage / 100)
-                else originalPrice
+                Spacer(Modifier.width(12.dp))
 
-                if (discountPercentage > 0) {
-                    Column {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        dish.name,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        maxLines = 1
+                    )
+
+                    val discountPercentage = dish.discount.toDoubleOrNull() ?: 0.0
+                    val originalPrice = dish.price.toDoubleOrNull() ?: 0.0
+                    val discountedPrice = if (discountPercentage > 0)
+                        originalPrice * (1 - discountPercentage / 100)
+                    else originalPrice
+
+                    if (discountPercentage > 0) {
+                        Column {
+                            Text(
+                                "Цена: ${"%.0f".format(discountedPrice)} тг",
+                                color = Color.Red,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                            Text(
+                                "Старая цена: ${"%.0f".format(originalPrice)} тг",
+                                color = Color.Gray,
+                                fontSize = 12.sp,
+                                style = TextStyle(textDecoration = TextDecoration.LineThrough)
+                            )
+                        }
+                    } else {
                         Text(
-                            "Цена: ${"%.0f".format(discountedPrice)} тг",
-                            color = Color.Red,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
+                            "Цена: ${"%.0f".format(originalPrice)} тг",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
                         )
+                    }
+
+                    if (dish.category.isNotBlank()) {
                         Text(
-                            "Старая цена: ${"%.0f".format(originalPrice)} тг",
+                            dish.category,
+                            fontSize = 12.sp,
                             color = Color.Gray,
-                            fontSize = 12.sp,
-                            style = TextStyle(textDecoration = TextDecoration.LineThrough)
-                        )
-                    }
-                } else {
-                    Text(
-                        "Цена: ${"%.0f".format(originalPrice)} тг",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                if (dish.category.isNotBlank()) {
-                    Text(
-                        dish.category,
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-
-                // Рейтинг блюда
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    val fullStars = dish.ratingAverage.toInt()
-                    val hasHalfStar = (dish.ratingAverage % 1) >= 0.5
-
-                    repeat(fullStars) {
-                        Icon(
-                            Icons.Filled.Star,
-                            null,
-                            tint = Color(0xFFFFC107),
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                    if (hasHalfStar) {
-                        Icon(
-                            Icons.Filled.StarHalf,
-                            null,
-                            tint = Color(0xFFFFC107),
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                    repeat(5 - fullStars - if (hasHalfStar) 1 else 0) {
-                        Icon(
-                            Icons.Outlined.Star,
-                            null,
-                            tint = Color.LightGray,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        "%.1f".format(dish.ratingAverage),
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-
-                    // Количество отзывов
-                    if (reviews.isNotEmpty()) {
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "${reviews.size} отзывов",
-                            fontSize = 12.sp,
-                            color = Color.Gray
+                            modifier = Modifier.padding(top = 4.dp)
                         )
                     }
                 }
             }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Рейтинг блюда
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val fullStars = dish.ratingAverage.toInt()
+                val hasHalfStar = (dish.ratingAverage % 1) >= 0.5
+
+                repeat(fullStars) {
+                    Icon(
+                        Icons.Filled.Star,
+                        null,
+                        tint = Color(0xFFFFC107),
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+                if (hasHalfStar) {
+                    Icon(
+                        Icons.Filled.StarHalf,
+                        null,
+                        tint = Color(0xFFFFC107),
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+                repeat(5 - fullStars - if (hasHalfStar) 1 else 0) {
+                    Icon(
+                        Icons.Outlined.Star,
+                        null,
+                        tint = Color.LightGray,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    "%.1f".format(dish.ratingAverage),
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+
+                // Количество отзывов
+                if (reviews.isNotEmpty()) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "${reviews.size} отзывов",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+            // УБРАЛИ ПРОФИЛЬ РЕСТОРАНА ИЗ КАРТОЧКИ
         }
     }
 }
@@ -633,7 +654,12 @@ fun DishCard(
 @Composable
 fun FullScreenDishDialog(
     dishWithReviews: DishWithReviews,
-    onClose: () -> Unit
+    restaurantName: String,
+    restaurantIcon: String,
+    restaurantRating: Double,
+    restaurantRatingCount: Long,
+    onClose: () -> Unit,
+    onProfileClick: () -> Unit // ДОБАВЛЕНО
 ) {
     val dish = dishWithReviews.dish
     val reviews = dishWithReviews.reviews
@@ -829,6 +855,104 @@ fun FullScreenDishDialog(
                     item {
                         Text("Вегетарианское: ${if (dish.vegetarian) "Да" else "Нет"}", fontSize = 16.sp)
                         Text("Доступно: ${if (dish.availability) "Да" else "Нет"}", fontSize = 16.sp)
+                    }
+
+                    // ✅ ПРОФИЛЬ РЕСТОРАНА ПЕРЕД ОТЗЫВАМИ (как в SellerMenuScreen)
+                    item {
+                        Spacer(Modifier.height(16.dp))
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = CardDefaults.cardElevation(4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                if (restaurantIcon.isNotEmpty()) {
+                                    AsyncImage(
+                                        model = restaurantIcon,
+                                        contentDescription = "Иконка ресторана",
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .clip(CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Icon(
+                                        Icons.Default.ArrowBack,
+                                        contentDescription = "Иконка ресторана",
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .background(Color.Gray.copy(alpha = 0.2f), CircleShape)
+                                            .padding(12.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        restaurantName,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+
+                                    Spacer(Modifier.height(4.dp))
+
+                                    // ✅ РЕЙТИНГ РЕСТОРАНА КАК В ПРОФИЛЕ
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        val fullStarsRestaurant = restaurantRating.toInt()
+                                        val hasHalfStarRestaurant = restaurantRating % 1 >= 0.5
+
+                                        repeat(fullStarsRestaurant) {
+                                            Icon(
+                                                Icons.Filled.Star,
+                                                contentDescription = null,
+                                                tint = Color(0xFFFFC107),
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+                                        if (hasHalfStarRestaurant) {
+                                            Icon(
+                                                Icons.Filled.StarHalf,
+                                                contentDescription = null,
+                                                tint = Color(0xFFFFC107),
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+                                        repeat(5 - fullStarsRestaurant - if (hasHalfStarRestaurant) 1 else 0) {
+                                            Icon(
+                                                Icons.Outlined.Star,
+                                                contentDescription = null,
+                                                tint = Color.LightGray,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+
+                                        Spacer(Modifier.width(4.dp))
+                                        // ✅ Форматирование как в профиле: "рейтинг (количество)"
+                                        Text(
+                                            "%.1f (%d)".format(restaurantRating, restaurantRatingCount),
+                                            fontSize = 12.sp,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(16.dp))
                     }
 
                     // ===== ОТЗЫВЫ БЛЮДА =====

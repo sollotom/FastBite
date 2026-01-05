@@ -153,7 +153,13 @@ class MainActivity : ComponentActivity() {
                                                 navController.navigate("add_dish")
                                             },
                                             onBackClick = {
-                                                // Пустое действие, так как это главный экран
+                                                // ✅ Обработка системной кнопки "Назад"
+                                                navController.popBackStack()
+                                            },
+                                            onProfileClick = {
+                                                navController.navigate("profile") {
+                                                    popUpTo("menu")
+                                                }
                                             }
                                         )
                                     }
