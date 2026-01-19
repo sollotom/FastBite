@@ -13,6 +13,27 @@
         android:theme="@style/Theme.FastBite"
         tools:targetApi="31">
         <activity
+            android:name=".CheckoutScreen"
+            android:exported="false" />
+        <activity
+            android:name=".CartObserver"
+            android:exported="false" />
+        <activity
+            android:name=".ui.theme.CartObserver"
+            android:exported="false" />
+        <activity
+            android:name=".ViewModelScope"
+            android:exported="false" />
+        <activity
+            android:name=".DishCardWithCart"
+            android:exported="false" />
+        <activity
+            android:name=".CartManager"
+            android:exported="false" />
+        <activity
+            android:name=".ui.theme.RestaurantProfileScreen"
+            android:exported="false" />
+        <activity
             android:name=".EditDishDialog"
             android:exported="false" />
         <activity

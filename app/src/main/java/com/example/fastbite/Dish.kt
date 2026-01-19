@@ -1,15 +1,5 @@
 package com.example.fastbite
 
-data class Review(
-    val id: String = "",
-    val userName: String = "",
-    val userEmail: String = "",
-    val rating: Double = 0.0,
-    val comment: String = "",
-    val date: String = "",
-    val dishId: String = ""
-)
-
 data class Dish(
     val id: String = "",
     val name: String = "",
@@ -38,6 +28,15 @@ data class Dish(
     val popular: Boolean = false,
     val dateAdded: String = "",
     val owner: String = "",
-    val reviews: List<Review> = listOf()
+    val reviews: List<Review> = emptyList()  // Добавляем поле reviews
+)
 
+data class Review(
+    val id: String = "",
+    val userName: String = "",
+    val userEmail: String = "",
+    val rating: Double = 0.0,
+    val comment: String = "",
+    val date: String = "",
+    val dishId: String = ""
 )
