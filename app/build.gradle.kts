@@ -21,9 +21,6 @@ android {
         compose = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
-    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -42,6 +39,7 @@ dependencies {
     implementation("androidx.compose.ui:ui:1.7.4")
     implementation("androidx.compose.material3:material3:1.3.1") // <- версия совместима с ui 1.7.4
     implementation("androidx.compose.ui:ui-tooling-preview:1.7.4")
+    implementation("androidx.compose.ui:ui-text:1.7.4") // ← ВОТ ЭТО ОБЯЗАТЕЛЬНО
     implementation(libs.androidx.activity)
     debugImplementation("androidx.compose.ui:ui-tooling:1.7.4")
     implementation("androidx.compose.material:material-icons-extended:1.7.4")
@@ -50,7 +48,7 @@ dependencies {
     // Compose Navigation (добавлено!)
     implementation("androidx.navigation:navigation-compose:2.7.3")
 
-    // AndroidX
+    // AndroidXаа
     implementation("androidx.core:core-ktx:1.13.1")
 
     implementation("androidx.appcompat:appcompat:1.7.0")
