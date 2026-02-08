@@ -82,22 +82,27 @@ fun CheckoutScreen(
     // Загружаем сохраненные адреса и карты пользователя
     LaunchedEffect(currentUserEmail) {
         if (currentUserEmail.isNotBlank()) {
-            // Загружаем сохраненные адреса
-            db.collection("users").document(currentUserEmail)
-                .collection("addresses")
-                .get()
-                .addOnSuccessListener { result ->
-                    savedAddresses = result.documents.mapNotNull { it.getString("address") }
-                }
-
-            // Загружаем сохраненные карты
-            db.collection("users").document(currentUserEmail)
-                .collection("cards")
-                .get()
-                .addOnSuccessListener { result ->
-                    savedCards = result.documents.mapNotNull {
-                        val last4 = it.getString("last4") ?: "****"
-                        "Карта **** $last4"
+            // Загружаем данные профиля
+            db.collection("users").document(currentUserEmail).get()
+                .addOnSuccessListener { doc ->
+                    if (doc.exists()) {
+                        userPhone = doc.getString("phone") ?: ""
+                        // Загружаем последний адрес
+                        db.collection("users").document(currentUserEmail)
+                            .collection("addresses")
+                            .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                            .limit(1)
+                            .get()
+                            .addOnSuccessListener { addresses ->
+                                if (!addresses.isEmpty) {
+                                    val latestAddress = addresses.documents[0]
+                                    deliveryAddress = latestAddress.getString("address") ?: ""
+                                    apartment = latestAddress.getString("apartment") ?: ""
+                                    entrance = latestAddress.getString("entrance") ?: ""
+                                    floor = latestAddress.getString("floor") ?: ""
+                                    intercom = latestAddress.getString("intercom") ?: ""
+                                }
+                            }
                     }
                 }
         }
