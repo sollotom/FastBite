@@ -20,12 +20,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
-fun AuthScreenNew(
+fun AuthScreen(
     navToUser: (email: String, role: String) -> Unit,
     navToSeller: (email: String, role: String) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var userName by remember { mutableStateOf("") } // Добавлено поле имени
     var isRegistering by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -86,9 +87,21 @@ fun AuthScreenNew(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
+            // Поле для имени только при регистрации
             if (isRegistering) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = userName,
+                    onValueChange = { userName = it },
+                    label = { Text("Ваше имя") },
+                    placeholder = { Text("Иван") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -112,11 +125,38 @@ fun AuthScreenNew(
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnSuccessListener {
                                 val uid = it.user!!.uid
-                                db.collection("users").document(uid)
-                                    .set(mapOf("role" to role, "email" to email))
+                                // Создаем данные пользователя с именем
+                                val userData = hashMapOf<String, Any>(
+                                    "role" to role,
+                                    "email" to email
+                                )
+
+                                // Добавляем имя, если оно указано
+                                if (userName.isNotBlank()) {
+                                    userData["name"] = userName
+                                }
+
+                                db.collection("users").document(email) // Сохраняем по email для удобства
+                                    .set(userData)
                                     .addOnSuccessListener {
-                                        if (role == "seller") navToSeller(email, role)
-                                        else navToUser(email, role)
+                                        if (role == "seller") {
+                                            // Для продавца также создаем запись в restaurants
+                                            val restaurantData = hashMapOf<String, Any>(
+                                                "name" to if (userName.isNotBlank()) userName else "Мой ресторан",
+                                                "email" to email,
+                                                "rating" to 0.0,
+                                                "ratingCount" to 0L,
+                                                "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                                            )
+
+                                            db.collection("restaurants").document(email)
+                                                .set(restaurantData)
+                                                .addOnSuccessListener {
+                                                    navToSeller(email, role)
+                                                }
+                                        } else {
+                                            navToUser(email, role)
+                                        }
                                     }
                                     .addOnFailureListener { e -> error = e.message ?: "" }
                             }
@@ -125,7 +165,7 @@ fun AuthScreenNew(
                         auth.signInWithEmailAndPassword(email, password)
                             .addOnSuccessListener {
                                 val uid = auth.currentUser!!.uid
-                                db.collection("users").document(uid).get()
+                                db.collection("users").document(email).get()
                                     .addOnSuccessListener { doc ->
                                         val role = doc.getString("role") ?: "user"
                                         if (role == "seller") navToSeller(email, role)
@@ -146,7 +186,10 @@ fun AuthScreenNew(
             Spacer(modifier = Modifier.height(12.dp))
 
             TextButton(
-                onClick = { isRegistering = !isRegistering },
+                onClick = {
+                    isRegistering = !isRegistering
+                    userName = "" // Сбрасываем имя при переключении
+                },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
                 Text(

@@ -56,8 +56,9 @@ class MainActivity : ComponentActivity() {
                 // Для продавца - управление навигацией
                 val sellerNavController = rememberNavController()
 
+                // В MainActivity измените:
                 if (loggedInEmail == null || loggedInRole == null) {
-                    AuthScreenNew(
+                    AuthScreen(  // Измените AuthScreenNew на AuthScreen
                         navToUser = { email, role ->
                             loggedInEmail = email
                             loggedInRole = role
