@@ -137,9 +137,18 @@ fun CheckoutScreen(
 
         isLoading = true
 
-        // Создаем объект заказа с явным указанием типа
+        // ПОПРАВЛЕНО: Получаем UID пользователя
+        val userId = auth.currentUser?.uid ?: ""
+        if (userId.isBlank()) {
+            errorMessage = "Ошибка: UID пользователя не найден"
+            showErrorDialog = true
+            isLoading = false
+            return
+        }
+
+        // Создаем объект заказа
         val order = hashMapOf<String, Any>(
-            "userId" to currentUserEmail,
+            "userId" to userId, // Теперь сохраняем UID, а не email
             "userEmail" to userEmail,
             "userPhone" to userPhone,
             "deliveryAddress" to deliveryAddress,
@@ -153,9 +162,10 @@ fun CheckoutScreen(
             "paymentMethod" to (selectedPaymentMethod?.name ?: "CASH"),
             "totalPrice" to totalPrice,
             "totalItems" to totalItems,
-            "status" to "НОВЫЙ",
+            "status" to "NEW", // Исправлено на английский для консистентности
             "createdAt" to FieldValue.serverTimestamp(),
-            "updatedAt" to FieldValue.serverTimestamp()
+            "updatedAt" to FieldValue.serverTimestamp(),
+            "orderNumber" to generateOrderNumber() // Добавляем номер заказа
         )
 
         // Если оплата картой, сохраняем информацию о карте
@@ -202,7 +212,8 @@ fun CheckoutScreen(
                                 "createdAt" to FieldValue.serverTimestamp()
                             )
 
-                            db.collection("users").document(currentUserEmail)
+                            // Используем userId для сохранения адресов
+                            db.collection("users").document(userId)
                                 .collection("addresses")
                                 .add(addressData)
                         }
@@ -216,7 +227,8 @@ fun CheckoutScreen(
                                 "createdAt" to FieldValue.serverTimestamp()
                             )
 
-                            db.collection("users").document(currentUserEmail)
+                            // Используем userId для сохранения карт
+                            db.collection("users").document(userId)
                                 .collection("cards")
                                 .add(cardData)
                         }
@@ -818,6 +830,13 @@ fun CheckoutItemCard(cartItem: CartItem) {
             )
         }
     }
+}
+
+// Функция генерации номера заказа - ИСПРАВЛЕНА ПОЗИЦИЯ
+private fun generateOrderNumber(): String {
+    val timestamp = System.currentTimeMillis()
+    val random = (1000..9999).random()
+    return "FB${timestamp.toString().takeLast(6)}${random}"
 }
 
 enum class PaymentMethod(val displayName: String) {
