@@ -21,7 +21,6 @@ import com.example.fastbite.ui.theme.FastBiteTheme
 import com.google.firebase.FirebaseApp
 import kotlinx.coroutines.launch
 
-// =================== USER BOTTOM NAV ===================
 sealed class BottomNavItem(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     object Menu : BottomNavItem("Меню", Icons.Default.Restaurant)
     object Cart : BottomNavItem("Корзина", Icons.Default.ShoppingCart)
@@ -40,25 +39,16 @@ class MainActivity : ComponentActivity() {
                 var loggedInEmail by remember { mutableStateOf(sharedPrefs.getString("user_email", null)) }
                 var loggedInRole by remember { mutableStateOf(sharedPrefs.getString("user_role", null)) }
 
-                // Для пользователя - управление навигацией
                 val userNavController = rememberNavController()
-                val coroutineScope = rememberCoroutineScope()
-
-                // Общее количество товаров в корзине (автоматически обновляется)
-                // Простой способ - используем наблюдаемое состояние
+                val sellerNavController = rememberNavController()
                 var cartItemCount by remember { mutableStateOf(CartManager.getTotalItems()) }
 
-                // Обновляем счетчик при изменении корзины
                 LaunchedEffect(CartManager.cartItems) {
                     cartItemCount = CartManager.getTotalItems()
                 }
 
-                // Для продавца - управление навигацией
-                val sellerNavController = rememberNavController()
-
-                // В MainActivity измените:
                 if (loggedInEmail == null || loggedInRole == null) {
-                    AuthScreen(  // Измените AuthScreenNew на AuthScreen
+                    AuthScreen(
                         navToUser = { email, role ->
                             loggedInEmail = email
                             loggedInRole = role
@@ -74,8 +64,8 @@ class MainActivity : ComponentActivity() {
                     )
                 } else {
                     when (loggedInRole) {
-                        // ================= USER =================
                         "user" -> {
+                            // ПОЛЬЗОВАТЕЛЬСКИЙ ИНТЕРФЕЙС
                             Scaffold(
                                 bottomBar = {
                                     NavigationBar {
@@ -149,7 +139,6 @@ class MainActivity : ComponentActivity() {
                                         CheckoutScreen(
                                             onBackClick = { userNavController.popBackStack() },
                                             onOrderConfirmed = {
-                                                // После успешного оформления заказа возвращаемся в корзину
                                                 userNavController.navigate("user_cart") {
                                                     popUpTo("user_menu") { inclusive = false }
                                                 }
@@ -165,17 +154,24 @@ class MainActivity : ComponentActivity() {
                                                 sharedPrefs.edit().clear().apply()
                                                 loggedInEmail = null
                                                 loggedInRole = null
+                                            },
+                                            onNavigateToOrders = {
+                                                userNavController.navigate("user_orders")
                                             }
+                                        )
+                                    }
+
+                                    composable("user_orders") {
+                                        UserOrdersScreen(
+                                            onBackClick = { userNavController.popBackStack() }
                                         )
                                     }
                                 }
                             }
                         }
 
-                        // ================= SELLER =================
                         "seller" -> {
-                            var selectedSellerItem by remember { mutableStateOf<SellerBottomNavItem>(SellerBottomNavItem.Menu) }
-
+                            // ИНТЕРФЕЙС ДЛЯ РЕСТОРАНА
                             Scaffold(
                                 bottomBar = {
                                     NavigationBar {
@@ -185,19 +181,16 @@ class MainActivity : ComponentActivity() {
                                             SellerBottomNavItem.Profile
                                         ).forEach { item ->
                                             NavigationBarItem(
-                                                selected = selectedSellerItem == item,
+                                                selected = sellerNavController.currentDestination?.route == when(item) {
+                                                    SellerBottomNavItem.Menu -> "seller_menu"
+                                                    SellerBottomNavItem.Orders -> "seller_orders"
+                                                    SellerBottomNavItem.Profile -> "seller_profile"
+                                                },
                                                 onClick = {
-                                                    selectedSellerItem = item
-                                                    when (item) {
-                                                        SellerBottomNavItem.Menu -> sellerNavController.navigate("seller_menu") {
-                                                            popUpTo("seller_menu") { inclusive = true }
-                                                        }
-                                                        SellerBottomNavItem.Orders -> sellerNavController.navigate("seller_orders") {
-                                                            popUpTo("seller_orders") { inclusive = true }
-                                                        }
-                                                        SellerBottomNavItem.Profile -> sellerNavController.navigate("seller_profile") {
-                                                            popUpTo("seller_profile") { inclusive = true }
-                                                        }
+                                                    when(item) {
+                                                        SellerBottomNavItem.Menu -> sellerNavController.navigate("seller_menu")
+                                                        SellerBottomNavItem.Orders -> sellerNavController.navigate("seller_orders")
+                                                        SellerBottomNavItem.Profile -> sellerNavController.navigate("seller_profile")
                                                     }
                                                 },
                                                 icon = { Icon(item.icon, contentDescription = item.title) },
@@ -222,9 +215,7 @@ class MainActivity : ComponentActivity() {
                                                 sellerNavController.popBackStack()
                                             },
                                             onProfileClick = {
-                                                sellerNavController.navigate("seller_profile") {
-                                                    popUpTo("seller_menu")
-                                                }
+                                                sellerNavController.navigate("seller_profile")
                                             }
                                         )
                                     }

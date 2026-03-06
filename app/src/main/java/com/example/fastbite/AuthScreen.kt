@@ -26,7 +26,7 @@ fun AuthScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var userName by remember { mutableStateOf("") } // Добавлено поле имени
+    var userName by remember { mutableStateOf("") }
     var isRegistering by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -87,15 +87,14 @@ fun AuthScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Поле для имени только при регистрации
             if (isRegistering) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
                     value = userName,
                     onValueChange = { userName = it },
-                    label = { Text("Ваше имя") },
-                    placeholder = { Text("Иван") },
+                    label = { Text("Название ресторана / Имя") },
+                    placeholder = { Text(if (isSeller) "Название ресторана" else "Иван") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -121,29 +120,31 @@ fun AuthScreen(
                 onClick = {
                     error = ""
                     if (isRegistering) {
-                        val role = if (isSeller) "seller" else "user"
+                        // РЕГИСТРАЦИЯ
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnSuccessListener {
-                                val uid = it.user!!.uid
-                                // Создаем данные пользователя с именем
+                                val role = if (isSeller) "seller" else "user"
+
+                                // Сохраняем в коллекцию users
                                 val userData = hashMapOf<String, Any>(
                                     "role" to role,
                                     "email" to email
                                 )
-
-                                // Добавляем имя, если оно указано
                                 if (userName.isNotBlank()) {
                                     userData["name"] = userName
                                 }
 
-                                db.collection("users").document(email) // Сохраняем по email для удобства
+                                db.collection("users").document(email)
                                     .set(userData)
                                     .addOnSuccessListener {
                                         if (role == "seller") {
-                                            // Для продавца также создаем запись в restaurants
+                                            // Для продавца создаем запись в restaurants
                                             val restaurantData = hashMapOf<String, Any>(
-                                                "name" to if (userName.isNotBlank()) userName else "Мой ресторан",
+                                                "name" to (if (userName.isNotBlank()) userName else "Мой ресторан"),
                                                 "email" to email,
+                                                "description" to "",
+                                                "iconUrl" to "",
+                                                "coverUrl" to "",
                                                 "rating" to 0.0,
                                                 "ratingCount" to 0L,
                                                 "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
@@ -152,28 +153,44 @@ fun AuthScreen(
                                             db.collection("restaurants").document(email)
                                                 .set(restaurantData)
                                                 .addOnSuccessListener {
+                                                    // Переходим в профиль продавца
                                                     navToSeller(email, role)
                                                 }
+                                                .addOnFailureListener { e ->
+                                                    error = "Ошибка создания ресторана: ${e.message}"
+                                                }
+                                        } else {
+                                            // Переходим в профиль пользователя
+                                            navToUser(email, role)
+                                        }
+                                    }
+                                    .addOnFailureListener { e ->
+                                        error = "Ошибка сохранения данных: ${e.message}"
+                                    }
+                            }
+                            .addOnFailureListener { e ->
+                                error = "Ошибка регистрации: ${e.message}"
+                            }
+                    } else {
+                        // ВХОД
+                        auth.signInWithEmailAndPassword(email, password)
+                            .addOnSuccessListener {
+                                db.collection("users").document(email).get()
+                                    .addOnSuccessListener { doc ->
+                                        val role = doc.getString("role") ?: "user"
+                                        if (role == "seller") {
+                                            navToSeller(email, role)
                                         } else {
                                             navToUser(email, role)
                                         }
                                     }
-                                    .addOnFailureListener { e -> error = e.message ?: "" }
-                            }
-                            .addOnFailureListener { e -> error = e.message ?: "" }
-                    } else {
-                        auth.signInWithEmailAndPassword(email, password)
-                            .addOnSuccessListener {
-                                val uid = auth.currentUser!!.uid
-                                db.collection("users").document(email).get()
-                                    .addOnSuccessListener { doc ->
-                                        val role = doc.getString("role") ?: "user"
-                                        if (role == "seller") navToSeller(email, role)
-                                        else navToUser(email, role)
+                                    .addOnFailureListener { e ->
+                                        error = "Ошибка получения роли: ${e.message}"
                                     }
-                                    .addOnFailureListener { e -> error = e.message ?: "" }
                             }
-                            .addOnFailureListener { e -> error = e.message ?: "" }
+                            .addOnFailureListener { e ->
+                                error = "Неверный email или пароль"
+                            }
                     }
                 },
                 modifier = Modifier
@@ -188,7 +205,8 @@ fun AuthScreen(
             TextButton(
                 onClick = {
                     isRegistering = !isRegistering
-                    userName = "" // Сбрасываем имя при переключении
+                    userName = ""
+                    isSeller = false
                 },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
