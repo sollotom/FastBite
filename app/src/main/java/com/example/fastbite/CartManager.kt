@@ -37,7 +37,7 @@ object CartManager {
     private val db = Firebase.firestore
     private val auth = FirebaseAuth.getInstance()
 
-    // Для выполнения асинхронных операций - ИСПОЛЬЗУЕМ НАШ СОБСТВЕННЫЙ SCOPE
+    // Для выполнения асинхронных операций
     private val ioScope = CoroutineScope(Dispatchers.IO)
 
     // ID пользователя
@@ -141,7 +141,7 @@ object CartManager {
         }
     }
 
-    // Основные методы с автоматической синхронизацией
+    // Добавить блюдо в корзину
     fun addToCart(dish: Dish) {
         val existingItem = _cartItems.find { it.dish.id == dish.id }
         if (existingItem != null) {
@@ -150,30 +150,27 @@ object CartManager {
             val newItem = CartItem(dish)
             _cartItems.add(newItem)
 
-            // Асинхронное сохранение в Firebase - ИСПОЛЬЗУЕМ ioScope
             ioScope.launch {
                 saveCartItemToFirebase(dish, 1)
             }
         }
     }
 
-    // УДАЛИТЬ ЭТУ ДУБЛИРУЮЩУЮСЯ ФУНКЦИЮ - она уже определена выше
-    // fun removeFromCart(dishId: String) {
-    //     _cartItems.removeAll { it.dish.id == dishId }
-    //
-    //     // Асинхронное удаление из Firebase - ИСПОЛЬЗУЕМ ioScope
-    //     ioScope.launch {
-    //         removeCartItemFromFirebase(dishId)
-    //     }
-    // }
+    // Удалить блюдо из корзины
+    fun removeFromCart(dishId: String) {
+        _cartItems.removeAll { it.dish.id == dishId }
 
+        ioScope.launch {
+            removeCartItemFromFirebase(dishId)
+        }
+    }
+
+    // Обновить количество
     fun updateQuantity(dishId: String, quantity: Int) {
         val item = _cartItems.find { it.dish.id == dishId }
         if (item != null) {
             if (quantity > 0) {
                 item.quantity = quantity
-
-                // Асинхронное обновление в Firebase - ИСПОЛЬЗУЕМ ioScope
                 ioScope.launch {
                     updateQuantityInFirebase(dishId, quantity)
                 }
@@ -183,25 +180,23 @@ object CartManager {
         }
     }
 
+    // Увеличить количество на 1
     fun incrementQuantity(dishId: String) {
         val item = _cartItems.find { it.dish.id == dishId }
         item?.let {
             it.quantity++
-
-            // Асинхронное обновление в Firebase - ИСПОЛЬЗУЕМ ioScope
             ioScope.launch {
                 updateQuantityInFirebase(dishId, it.quantity)
             }
         }
     }
 
+    // Уменьшить количество на 1
     fun decrementQuantity(dishId: String) {
         val item = _cartItems.find { it.dish.id == dishId }
         item?.let {
             if (it.quantity > 1) {
                 it.quantity--
-
-                // Асинхронное обновление в Firebase - ИСПОЛЬЗУЕМ ioScope
                 ioScope.launch {
                     updateQuantityInFirebase(dishId, it.quantity)
                 }
@@ -211,15 +206,20 @@ object CartManager {
         }
     }
 
+    // Алиас для decrementQuantity (для обратной совместимости)
+    fun decreaseQuantity(dishId: String) {
+        decrementQuantity(dishId)
+    }
+
+    // Очистить корзину
     fun clearCart() {
         _cartItems.clear()
-
-        // Асинхронная очистка в Firebase - ИСПОЛЬЗУЕМ ioScope
         ioScope.launch {
             clearCartInFirebase()
         }
     }
 
+    // Получить общую сумму
     fun getTotalPrice(): Double {
         return _cartItems.sumOf { item ->
             val discountPercentage = item.dish.discount?.toDoubleOrNull() ?: 0.0
@@ -231,8 +231,14 @@ object CartManager {
         }
     }
 
+    // Получить общее количество товаров
     fun getTotalItems(): Int {
         return _cartItems.sumOf { it.quantity }
+    }
+
+    // Получить размер корзины (количество уникальных товаров)
+    fun getCartSize(): Int {
+        return _cartItems.size
     }
 
     // Получить количество конкретного товара
@@ -240,23 +246,26 @@ object CartManager {
         return _cartItems.find { it.dish.id == dishId }?.quantity ?: 0
     }
 
-    // Используйте decrementQuantity вместо decreaseQuantity, или добавьте алиас
-    fun decreaseQuantity(dishId: String) {
-        decrementQuantity(dishId)
-    }
-
-    // Добавьте эту функцию, которая работает с _cartItems
-    fun removeFromCart(dishId: String) {
-        _cartItems.removeAll { it.dish.id == dishId }
-
-        // Асинхронное удаление из Firebase - ИСПОЛЬЗУЕМ ioScope
-        ioScope.launch {
-            removeCartItemFromFirebase(dishId)
-        }
-    }
-
     // Проверить, есть ли блюдо в корзине
     fun isInCart(dishId: String): Boolean {
         return _cartItems.any { it.dish.id == dishId }
     }
+
+    // Получить все элементы корзины
+    fun getCartItems(): List<CartItem> {
+        return _cartItems.toList()
+    }
+}
+
+// Composable функция для наблюдения за количеством товара
+@Composable
+fun rememberCartItemQuantity(dishId: String): Int {
+    var quantity by remember { mutableStateOf(CartManager.getItemQuantity(dishId)) }
+
+    // Обновляем при изменении корзины (простой способ - перечитывать при рекомпозиции)
+    LaunchedEffect(dishId, CartManager.getCartSize()) {
+        quantity = CartManager.getItemQuantity(dishId)
+    }
+
+    return quantity
 }
