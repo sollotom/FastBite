@@ -4,8 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +34,7 @@ import androidx.activity.compose.BackHandler
 import coil.compose.AsyncImage
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.tasks.await
 
 // Enum для сортировки
 enum class SortOption(val displayName: String) {
@@ -76,52 +77,52 @@ fun MenuScreen(
 
     // Загружаем все блюда из всех аккаунтов
     LaunchedEffect(Unit) {
-        db.collection("dishes")
-            .whereEqualTo("availability", true)
-            .get()
-            .addOnSuccessListener { result ->
-                dishes = result.map {
-                    Dish(
-                        id = it.id,
-                        name = it.getString("name") ?: "",
-                        price = it.getString("price") ?: "",
-                        description = it.getString("description") ?: "",
-                        photoUrl = it.getString("photoUrl") ?: "",
-                        category = it.getString("category") ?: "",
-                        weightOrVolume = it.getString("weightOrVolume") ?: "",
-                        ingredients = it.getString("ingredients") ?: "",
-                        calories = it.getString("calories") ?: "",
-                        proteins = it.getString("proteins") ?: "",
-                        fats = it.getString("fats") ?: "",
-                        carbs = it.getString("carbs") ?: "",
-                        cookingTime = it.getString("cookingTime") ?: "",
-                        spiciness = it.getString("spiciness") ?: "",
-                        vegetarian = it.getBoolean("vegetarian") ?: false,
-                        allergens = it.getString("allergens") ?: "",
-                        addOns = it.getString("addOns") ?: "",
-                        addOnsPrice = it.getString("addOnsPrice") ?: "",
-                        availability = it.getBoolean("availability") ?: true,
-                        ratingAverage = it.getDouble("ratingAverage") ?: 0.0,
-                        ratingCount = it.getLong("ratingCount") ?: 0L,
-                        portions = it.getString("portions") ?: "",
-                        costPrice = it.getString("costPrice") ?: "",
-                        discount = it.getString("discount") ?: "",
-                        popular = it.getBoolean("popular") ?: false,
-                        dateAdded = it.getString("dateAdded") ?: "",
-                        owner = it.getString("owner") ?: ""
-                    )
-                }
-                loading = false
+        try {
+            val result = db.collection("dishes")
+                .whereEqualTo("availability", true)
+                .get()
+                .await()
+
+            dishes = result.documents.map { doc ->
+                Dish(
+                    id = doc.id,
+                    name = doc.getString("name") ?: "",
+                    price = doc.getString("price") ?: "0",
+                    description = doc.getString("description") ?: "",
+                    photoUrl = doc.getString("photoUrl") ?: "",
+                    category = doc.getString("category") ?: "",
+                    weightOrVolume = doc.getString("weightOrVolume") ?: "",
+                    ingredients = doc.getString("ingredients") ?: "",
+                    calories = doc.getString("calories") ?: "",
+                    proteins = doc.getString("proteins") ?: "",
+                    fats = doc.getString("fats") ?: "",
+                    carbs = doc.getString("carbs") ?: "",
+                    cookingTime = doc.getString("cookingTime") ?: "",
+                    spiciness = doc.getString("spiciness") ?: "",
+                    vegetarian = doc.getBoolean("vegetarian") ?: false,
+                    allergens = doc.getString("allergens") ?: "",
+                    addOns = doc.getString("addOns") ?: "",
+                    addOnsPrice = doc.getString("addOnsPrice") ?: "",
+                    availability = doc.getBoolean("availability") ?: true,
+                    ratingAverage = doc.getDouble("ratingAverage") ?: 0.0,
+                    ratingCount = doc.getLong("ratingCount") ?: 0L,
+                    portions = doc.getString("portions") ?: "",
+                    costPrice = doc.getString("costPrice") ?: "",
+                    discount = doc.getString("discount") ?: "",
+                    popular = doc.getBoolean("popular") ?: false,
+                    dateAdded = doc.getString("dateAdded") ?: "",
+                    owner = doc.getString("owner") ?: ""
+                )
             }
-            .addOnFailureListener {
-                loading = false
-            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            loading = false
+        }
     }
 
     BackHandler(enabled = selectedDish != null) {
-        if (selectedDish != null) {
-            selectedDish = null
-        }
+        selectedDish = null
     }
 
     // Получаем уникальные категории для фильтра
@@ -231,7 +232,6 @@ fun MenuScreen(
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
 
-                    // Используем Column для чипов фильтров
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -334,7 +334,6 @@ fun MenuScreen(
                         }
                     }
 
-                    // Кнопка очистки всех фильтров
                     TextButton(
                         onClick = {
                             selectedCategory = null
@@ -352,7 +351,6 @@ fun MenuScreen(
                 }
             }
 
-            // Информация о количестве найденных блюд и кнопка фильтров
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -366,10 +364,8 @@ fun MenuScreen(
                     color = Color.Gray
                 )
 
-                // Кнопка фильтров
                 OutlinedButton(
                     onClick = {
-                        // Синхронизируем текущие значения с временными
                         tempSelectedCategory = selectedCategory
                         tempMinPrice = minPrice
                         tempMaxPrice = maxPrice
@@ -483,11 +479,8 @@ fun MenuScreen(
             onHasDiscountChange = { tempHasDiscount = it },
             sortBy = tempSortBy,
             onSortChange = { tempSortBy = it },
-            onDismiss = {
-                showFilterDialog = false
-            },
+            onDismiss = { showFilterDialog = false },
             onApply = {
-                // Применяем временные фильтры к основным
                 selectedCategory = tempSelectedCategory
                 minPrice = tempMinPrice
                 maxPrice = tempMaxPrice
@@ -645,7 +638,6 @@ fun MenuScreen(
 
                 Text("Вегетарианское: ${if (dish.vegetarian) "Да" else "Нет"}", fontSize = 16.sp)
 
-                // Рейтинг блюда
                 val avgRating = dish.ratingAverage ?: 0.0
                 val totalRatings = dish.ratingCount ?: 0L
 
@@ -668,7 +660,6 @@ fun MenuScreen(
                 }
                 Spacer(Modifier.height(16.dp))
 
-                // Добавляем информацию о ресторане с кнопкой перехода
                 var restaurantName by remember { mutableStateOf("") }
                 var restaurantIcon by remember { mutableStateOf("") }
                 var restaurantRating by remember { mutableStateOf(0.0) }
@@ -676,13 +667,15 @@ fun MenuScreen(
 
                 LaunchedEffect(dish.owner) {
                     if (dish.owner.isNotBlank()) {
-                        db.collection("restaurants").document(dish.owner).get()
-                            .addOnSuccessListener { doc ->
-                                restaurantName = doc.getString("name") ?: "Неизвестный ресторан"
-                                restaurantIcon = doc.getString("iconUrl") ?: ""
-                                restaurantRating = doc.getDouble("rating") ?: 0.0
-                                restaurantRatingCount = doc.getLong("ratingCount") ?: 0L
-                            }
+                        try {
+                            val doc = db.collection("restaurants").document(dish.owner).get().await()
+                            restaurantName = doc.getString("name") ?: "Неизвестный ресторан"
+                            restaurantIcon = doc.getString("iconUrl") ?: ""
+                            restaurantRating = doc.getDouble("rating") ?: 0.0
+                            restaurantRatingCount = doc.getLong("ratingCount") ?: 0L
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
                 }
 
@@ -841,11 +834,8 @@ fun FilterDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Сортировка
                 Text("Сортировка", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Column(
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
+                Column(modifier = Modifier.padding(top = 4.dp)) {
                     SortOption.values().forEach { option ->
                         Row(
                             modifier = Modifier
@@ -869,13 +859,11 @@ fun FilterDialog(
 
                 Divider(modifier = Modifier.padding(vertical = 4.dp))
 
-                // Категория - список как в SellerMenuScreen
                 Text("Категория", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Column(
                     modifier = Modifier.padding(top = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // "Все категории"
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -894,7 +882,6 @@ fun FilterDialog(
                         )
                     }
 
-                    // Список категорий
                     categories.forEach { category ->
                         Row(
                             modifier = Modifier
@@ -918,7 +905,6 @@ fun FilterDialog(
 
                 Divider(modifier = Modifier.padding(vertical = 4.dp))
 
-                // Цена
                 Text("Цена, тг", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -926,9 +912,7 @@ fun FilterDialog(
                 ) {
                     OutlinedTextField(
                         value = minPrice?.toString() ?: "",
-                        onValueChange = {
-                            onMinPriceChange(it.toDoubleOrNull())
-                        },
+                        onValueChange = { onMinPriceChange(it.toDoubleOrNull()) },
                         label = { Text("От", fontSize = 14.sp) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -937,9 +921,7 @@ fun FilterDialog(
                     )
                     OutlinedTextField(
                         value = maxPrice?.toString() ?: "",
-                        onValueChange = {
-                            onMaxPriceChange(it.toDoubleOrNull())
-                        },
+                        onValueChange = { onMaxPriceChange(it.toDoubleOrNull()) },
                         label = { Text("До", fontSize = 14.sp) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -950,7 +932,6 @@ fun FilterDialog(
 
                 Divider(modifier = Modifier.padding(vertical = 4.dp))
 
-                // Дополнительные фильтры
                 Text("Дополнительно", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Column(
                     modifier = Modifier.padding(top = 4.dp),
@@ -984,14 +965,12 @@ fun FilterDialog(
 
                 Divider(modifier = Modifier.padding(vertical = 4.dp))
 
-                // Рейтинг - список как категории
                 Text("Минимальный рейтинг", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 val ratingOptions = listOf(4.0, 3.5, 3.0, 2.5, 2.0, 1.0)
                 Column(
                     modifier = Modifier.padding(top = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    // "Любой"
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1010,7 +989,6 @@ fun FilterDialog(
                         )
                     }
 
-                    // Список рейтингов
                     ratingOptions.forEach { rating ->
                         Row(
                             modifier = Modifier
@@ -1050,111 +1028,6 @@ fun FilterDialog(
             }
         }
     )
-}
-// Упрощенная версия чипов категорий
-@Composable
-fun SimpleCategoryChips(
-    categories: List<String>,
-    selectedCategory: String?,
-    onCategorySelect: (String?) -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // "Все категории"
-        AssistChip(
-            onClick = { onCategorySelect(null) },
-            label = { Text("Все категории", fontSize = 14.sp) },
-            colors = AssistChipDefaults.assistChipColors(
-                containerColor = if (selectedCategory == null)
-                    MaterialTheme.colorScheme.primaryContainer
-                else MaterialTheme.colorScheme.surfaceVariant
-            )
-        )
-
-        // Категории - простой список
-        val chunkedCategories = remember(categories) { categories.chunked(3) }
-
-        chunkedCategories.forEachIndexed { index, chunk ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                for (category in chunk) {
-                    AssistChip(
-                        onClick = { onCategorySelect(category) },
-                        label = {
-                            Text(
-                                category,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                fontSize = 14.sp
-                            )
-                        },
-                        colors = AssistChipDefaults.assistChipColors(
-                            containerColor = if (selectedCategory == category)
-                                MaterialTheme.colorScheme.primaryContainer
-                            else MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                // Заполняем оставшееся место пустыми чипами для выравнивания
-                for (i in chunk.size until 3) {
-                    Spacer(Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
-// Упрощенная версия чипов рейтингов
-@Composable
-fun SimpleRatingChips(
-    ratingOptions: List<Double>,
-    minRating: Double?,
-    onMinRatingChange: (Double?) -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // "Любой"
-        AssistChip(
-            onClick = { onMinRatingChange(null) },
-            label = { Text("Любой", fontSize = 14.sp) },
-            colors = AssistChipDefaults.assistChipColors(
-                containerColor = if (minRating == null) MaterialTheme.colorScheme.primaryContainer
-                else MaterialTheme.colorScheme.surfaceVariant
-            )
-        )
-
-        // Рейтинги - простой список
-        val chunkedRatings = remember(ratingOptions) { ratingOptions.chunked(3) }
-
-        chunkedRatings.forEachIndexed { index, chunk ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                for (rating in chunk) {
-                    AssistChip(
-                        onClick = { onMinRatingChange(rating) },
-                        label = { Text("★ $rating+", fontSize = 14.sp) },
-                        colors = AssistChipDefaults.assistChipColors(
-                            containerColor = if (minRating == rating)
-                                MaterialTheme.colorScheme.primaryContainer
-                            else MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                // Заполняем оставшееся место пустыми чипами для выравнивания
-                for (i in chunk.size until 3) {
-                    Spacer(Modifier.weight(1f))
-                }
-            }
-        }
-    }
 }
 
 // Карточка блюда для меню
@@ -1281,19 +1154,19 @@ fun MenuDishCard(
     }
 }
 
-// Кнопка корзины для карточки
+// Кнопка корзины для карточки - ИСПРАВЛЕННАЯ ВЕРСИЯ
 @Composable
 fun CartButtonCompact(
     dish: Dish,
     modifier: Modifier = Modifier
 ) {
-    val quantity = observeCartItemQuantity(dish.id)
+    val quantity = rememberCartItemQuantity(dish.id)
 
     Surface(
         modifier = modifier,
         shape = CircleShape,
         color = MaterialTheme.colorScheme.primary,
-        shadowElevation = if (quantity > 0) 4.dp else 2.dp
+        tonalElevation = if (quantity > 0) 4.dp else 2.dp
     ) {
         Box(
             contentAlignment = Alignment.Center,
@@ -1330,7 +1203,7 @@ fun CartControlsCompact(
     dish: Dish,
     modifier: Modifier = Modifier
 ) {
-    val quantity = observeCartItemQuantity(dish.id)
+    val quantity = rememberCartItemQuantity(dish.id)
 
     Card(
         modifier = modifier,
