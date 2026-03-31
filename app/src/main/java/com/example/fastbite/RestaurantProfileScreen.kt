@@ -31,6 +31,186 @@ import coil.compose.AsyncImage
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
+// Компактные контролы корзины
+@Composable
+fun CartControlsCompact(
+    dish: Dish,
+    modifier: Modifier = Modifier
+) {
+    val quantity = rememberCartItemQuantity(dish.id)
+    val discountPercentage = dish.discount?.toDoubleOrNull() ?: 0.0
+    val originalPrice = dish.price.toDoubleOrNull() ?: 0.0
+    val discountedPrice = if (discountPercentage > 0)
+        originalPrice * (1 - discountPercentage / 100)
+    else originalPrice
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        if (quantity == 0) {
+            Button(
+                onClick = { CartManager.addToCart(dish) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(
+                    Icons.Default.AddShoppingCart,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Добавить в корзину",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    "В корзине",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        IconButton(
+                            onClick = { CartManager.decrementQuantity(dish.id) },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(
+                                Icons.Default.Remove,
+                                contentDescription = "Уменьшить",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                quantity.toString(),
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "шт.",
+                                fontSize = 11.sp,
+                                color = Color.Gray
+                            )
+                        }
+
+                        IconButton(
+                            onClick = { CartManager.incrementQuantity(dish.id) },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Увеличить",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            "Сумма",
+                            fontSize = 11.sp,
+                            color = Color.Gray
+                        )
+                        Text(
+                            "${"%.0f".format(discountedPrice * quantity)} ₸",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Компактная кнопка корзины
+@Composable
+fun CartButtonCompact(dish: Dish, modifier: Modifier = Modifier) {
+    val quantity = rememberCartItemQuantity(dish.id)
+
+    Surface(
+        modifier = modifier,
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.primary,
+        tonalElevation = if (quantity > 0) 4.dp else 2.dp
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(36.dp)
+                .clickable { CartManager.addToCart(dish) }
+        ) {
+            if (quantity > 0) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 4.dp, y = (-4).dp)
+                        .size(16.dp)
+                        .background(
+                            color = Color.Red,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        if (quantity > 99) "99+" else quantity.toString(),
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Icon(
+                if (quantity > 0) Icons.Default.ShoppingCart else Icons.Default.AddShoppingCart,
+                contentDescription = "Добавить в корзину",
+                tint = Color.White,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RestaurantProfileScreen(
@@ -387,13 +567,13 @@ fun RestaurantProfileScreen(
                 if (discountPercentage > 0) {
                     Column {
                         Text(
-                            "Цена: ${"%.0f".format(discountedPrice)} тг",
+                            "Цена: ${"%.0f".format(discountedPrice)} ₸",
                             color = Color.Red,
                             fontWeight = FontWeight.Bold,
                             fontSize = 24.sp
                         )
                         Text(
-                            "Старая цена: ${"%.0f".format(originalPrice)} тг",
+                            "Старая цена: ${"%.0f".format(originalPrice)} ₸",
                             color = Color.Gray,
                             fontSize = 16.sp,
                             style = TextStyle(textDecoration = TextDecoration.LineThrough)
@@ -401,7 +581,7 @@ fun RestaurantProfileScreen(
                     }
                 } else {
                     Text(
-                        "Цена: ${"%.0f".format(originalPrice)} тг",
+                        "Цена: ${"%.0f".format(originalPrice)} ₸",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -542,13 +722,13 @@ fun RestaurantDishCard(
                 if (discountPercentage > 0) {
                     Column {
                         Text(
-                            "${"%.0f".format(discountedPrice)} тг",
+                            "${"%.0f".format(discountedPrice)} ₸",
                             color = Color.Red,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
                         )
                         Text(
-                            "${"%.0f".format(originalPrice)} тг",
+                            "${"%.0f".format(originalPrice)} ₸",
                             color = Color.Gray,
                             fontSize = 12.sp,
                             style = TextStyle(textDecoration = TextDecoration.LineThrough)
@@ -556,7 +736,7 @@ fun RestaurantDishCard(
                     }
                 } else {
                     Text(
-                        "${"%.0f".format(originalPrice)} тг",
+                        "${"%.0f".format(originalPrice)} ₸",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )
