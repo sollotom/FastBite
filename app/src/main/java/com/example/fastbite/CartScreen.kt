@@ -14,10 +14,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,14 +28,13 @@ fun CartScreen(
     val cartItems = CartManager.cartItems
     val totalPrice by derivedStateOf { CartManager.getTotalPrice() }
     val totalItems by derivedStateOf { CartManager.getTotalItems() }
-    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "Корзина",
+                        text = "Корзина",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -44,7 +43,10 @@ fun CartScreen(
                     IconButton(onClick = onNavigateToMenu) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
         bottomBar = {
@@ -65,23 +67,27 @@ fun CartScreen(
                     ) {
                         Column {
                             Text(
-                                "Итого: ${"%.0f".format(totalPrice)} тг",
+                                text = "Итого: ${"%.0f".format(totalPrice)} тг",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "$totalItems ${getItemsText(totalItems)}",
+                                text = "$totalItems ${getItemsWord(totalItems)}",
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
                         }
 
                         Button(
-                            onClick = { onNavigateToCheckout() },
+                            onClick = onNavigateToCheckout,
                             modifier = Modifier.height(50.dp),
-                            enabled = cartItems.isNotEmpty()
+                            enabled = cartItems.isNotEmpty(),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Оформить заказ", fontSize = 16.sp)
+                            Text(
+                                text = "Оформить заказ",
+                                fontSize = 16.sp
+                            )
                         }
                     }
                 }
@@ -104,17 +110,26 @@ fun CartScreen(
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    "Корзина пуста",
+                    text = "Корзина пуста",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Gray
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Добавьте товары из меню",
+                    text = "Добавьте товары из меню",
                     fontSize = 16.sp,
                     color = Color.Gray
                 )
+                Spacer(Modifier.height(16.dp))
+                Button(
+                    onClick = onNavigateToMenu,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "Перейти в меню"
+                    )
+                }
             }
         } else {
             LazyColumn(
@@ -127,6 +142,10 @@ fun CartScreen(
                 items(cartItems) { cartItem ->
                     CartItemCard(cartItem = cartItem)
                 }
+
+                item {
+                    Spacer(Modifier.height(80.dp))
+                }
             }
         }
     }
@@ -135,8 +154,14 @@ fun CartScreen(
 @Composable
 fun CartItemCard(cartItem: CartItem) {
     val dish = cartItem.dish
-    // Убираем вызов observeCartItemQuantity и используем cartItem.quantity напрямую
     val currentQuantity = cartItem.quantity
+
+    val discountPercentage = dish.discount?.toDoubleOrNull() ?: 0.0
+    val originalPrice = dish.price.toDoubleOrNull() ?: 0.0
+    val discountedPrice = if (discountPercentage > 0)
+        originalPrice * (1 - discountPercentage / 100)
+    else originalPrice
+    val itemTotal = discountedPrice * currentQuantity
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -164,7 +189,7 @@ fun CartItemCard(cartItem: CartItem) {
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    dish.name,
+                    text = dish.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     maxLines = 2
@@ -172,11 +197,29 @@ fun CartItemCard(cartItem: CartItem) {
 
                 Spacer(Modifier.height(4.dp))
 
-                Text(
-                    "${dish.price} тг",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
+                if (discountPercentage > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "${"%.0f".format(discountedPrice)} тг",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Red
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "${"%.0f".format(originalPrice)} тг",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            textDecoration = TextDecoration.LineThrough
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "${"%.0f".format(originalPrice)} тг",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                }
             }
 
             Column(
@@ -188,7 +231,7 @@ fun CartItemCard(cartItem: CartItem) {
                     IconButton(
                         onClick = {
                             if (currentQuantity > 1) {
-                                CartManager.decreaseQuantity(dish.id)
+                                CartManager.decrementQuantity(dish.id)
                             } else {
                                 CartManager.removeFromCart(dish.id)
                             }
@@ -203,10 +246,12 @@ fun CartItemCard(cartItem: CartItem) {
                     }
 
                     Text(
-                        "$currentQuantity",
+                        text = "$currentQuantity",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.width(32.dp).wrapContentWidth(Alignment.CenterHorizontally)
+                        modifier = Modifier
+                            .width(32.dp)
+                            .wrapContentWidth(Alignment.CenterHorizontally)
                     )
 
                     IconButton(
@@ -226,17 +271,17 @@ fun CartItemCard(cartItem: CartItem) {
                 Spacer(Modifier.height(4.dp))
 
                 Text(
-                    "${"%.0f".format(dish.price.toDoubleOrNull() ?: 0.0 * currentQuantity)} тг",
+                    text = "${"%.0f".format(itemTotal)} тг",
                     fontSize = 14.sp,
-                    color = Color.Gray
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
     }
 }
 
-@Composable
-private fun getItemsText(count: Int): String {
+private fun getItemsWord(count: Int): String {
     return when {
         count % 10 == 1 && count % 100 != 11 -> "товар"
         count % 10 in 2..4 && count % 100 !in 12..14 -> "товара"

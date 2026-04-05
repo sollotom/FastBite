@@ -1,5 +1,6 @@
 package com.example.fastbite
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,13 +23,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,10 +40,9 @@ fun ProfileScreen(
 ) {
     val context = LocalContext.current
     val db = FirebaseFirestore.getInstance()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val coroutineScope = rememberCoroutineScope()
 
-    var currentScreen by remember { mutableStateOf<ProfileScreenType>(ProfileScreenType.Main) }
+    var currentScreen by remember { mutableStateOf(ProfileScreenType.Main) }
     var previousScreens by remember { mutableStateOf(listOf<ProfileScreenType>()) }
 
     var selectedAddressForEdit by remember { mutableStateOf<Address?>(null) }
@@ -52,16 +52,13 @@ fun ProfileScreen(
     var userName by remember { mutableStateOf("") }
     var userPhone by remember { mutableStateOf("") }
     var addresses by remember { mutableStateOf<List<Address>>(emptyList()) }
-    var selectedAddressId by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
-    // Настройки
     var notificationsEnabled by remember { mutableStateOf(true) }
     var emailEnabled by remember { mutableStateOf(false) }
     var language by remember { mutableStateOf("Русский") }
     var theme by remember { mutableStateOf("Светлая") }
 
-    // Функция для навигации
     fun navigateTo(screen: ProfileScreenType) {
         previousScreens = previousScreens + currentScreen
         currentScreen = screen
@@ -76,68 +73,48 @@ fun ProfileScreen(
         }
     }
 
-    // Обработка кнопки "Назад"
     BackHandler {
         if (currentScreen != ProfileScreenType.Main) {
             navigateBack()
         }
     }
 
-    // Загрузка данных пользователя
     LaunchedEffect(userEmail) {
-        if (userEmail.isBlank()) {
-            return@LaunchedEffect
-        }
+        if (userEmail.isBlank()) return@LaunchedEffect
 
         isLoading = true
         try {
-            // Загружаем данные пользователя
             val userDoc = db.collection("users").document(userEmail).get().await()
             if (userDoc.exists()) {
                 userName = userDoc.getString("name") ?: ""
                 userPhone = userDoc.getString("phone") ?: ""
             }
 
-            // Загружаем адреса из коллекции "address"
             loadAddressesFromFirestore(
                 userEmail = userEmail,
                 db = db,
                 onResult = { loadedAddresses ->
                     addresses = loadedAddresses
-                    selectedAddressId = loadedAddresses.find { it.isDefault }?.id
-                        ?: loadedAddresses.firstOrNull()?.id
                     isLoading = false
                 },
                 onError = { errorMessage ->
                     isLoading = false
                 }
             )
-
         } catch (e: Exception) {
             e.printStackTrace()
             isLoading = false
         }
     }
 
-    // Диалог подтверждения удаления
     if (showDeleteDialog && addressToDelete != null) {
         AlertDialog(
             onDismissRequest = {
                 showDeleteDialog = false
                 addressToDelete = null
             },
-            title = {
-                Text(
-                    "Удалить адрес",
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Text(
-                    "Вы уверены, что хотите удалить адрес:\n${addressToDelete!!.address}?",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
+            title = { Text("Удалить адрес", fontWeight = FontWeight.Bold) },
+            text = { Text("Вы уверены, что хотите удалить адрес:\n${addressToDelete!!.address}?") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -145,17 +122,11 @@ fun ProfileScreen(
                             try {
                                 deleteAddressFromFirestore(userEmail, addressToDelete!!.id, db)
                                 Toast.makeText(context, "Адрес удален", Toast.LENGTH_SHORT).show()
-                                // Перезагружаем адреса после удаления
                                 loadAddressesFromFirestore(
                                     userEmail = userEmail,
                                     db = db,
-                                    onResult = { loadedAddresses ->
-                                        addresses = loadedAddresses
-                                        selectedAddressId = loadedAddresses.find { it.isDefault }?.id
-                                            ?: loadedAddresses.firstOrNull()?.id
-                                    },
-                                    onError = { errorMessage ->
-                                    }
+                                    onResult = { addresses = it },
+                                    onError = {}
                                 )
                             } catch (e: Exception) {
                                 e.printStackTrace()
@@ -165,20 +136,14 @@ fun ProfileScreen(
                             }
                         }
                     },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Удалить")
-                }
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) { Text("Удалить") }
             },
             dismissButton = {
                 TextButton(onClick = {
                     showDeleteDialog = false
                     addressToDelete = null
-                }) {
-                    Text("Отмена")
-                }
+                }) { Text("Отмена") }
             },
             shape = RoundedCornerShape(28.dp)
         )
@@ -209,10 +174,7 @@ fun ProfileScreen(
                 navigationIcon = {
                     if (currentScreen != ProfileScreenType.Main) {
                         IconButton(onClick = { navigateBack() }) {
-                            Icon(
-                                Icons.Default.ArrowBack,
-                                contentDescription = "Назад"
-                            )
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
                         }
                     }
                 },
@@ -220,16 +182,12 @@ fun ProfileScreen(
                     when (currentScreen) {
                         ProfileScreenType.Main -> {
                             IconButton(onClick = { navigateTo(ProfileScreenType.Settings) }) {
-                                Icon(
-                                    Icons.Outlined.Settings,
-                                    contentDescription = "Настройки"
-                                )
+                                Icon(Icons.Outlined.Settings, contentDescription = "Настройки")
                             }
                         }
                         else -> {}
                     }
                 },
-                scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -239,21 +197,14 @@ fun ProfileScreen(
     ) { paddingValues ->
         if (isLoading) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    strokeWidth = 3.dp
-                )
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
+                modifier = Modifier.fillMaxSize().padding(paddingValues)
             ) {
                 when (currentScreen) {
                     ProfileScreenType.Main -> {
@@ -319,16 +270,11 @@ fun ProfileScreen(
                                     try {
                                         setDefaultAddress(userEmail, address.id, db)
                                         Toast.makeText(context, "Основной адрес изменен", Toast.LENGTH_SHORT).show()
-                                        // Перезагружаем адреса после установки основного
                                         loadAddressesFromFirestore(
                                             userEmail = userEmail,
                                             db = db,
-                                            onResult = { loadedAddresses ->
-                                                addresses = loadedAddresses
-                                                selectedAddressId = loadedAddresses.find { it.isDefault }?.id
-                                            },
-                                            onError = { errorMessage ->
-                                            }
+                                            onResult = { addresses = it },
+                                            onError = {}
                                         )
                                     } catch (e: Exception) {
                                         e.printStackTrace()
@@ -346,17 +292,11 @@ fun ProfileScreen(
                                     try {
                                         addAddressToFirestore(userEmail, newAddress, db)
                                         Toast.makeText(context, "Адрес добавлен", Toast.LENGTH_SHORT).show()
-                                        // Перезагружаем адреса после добавления
                                         loadAddressesFromFirestore(
                                             userEmail = userEmail,
                                             db = db,
-                                            onResult = { loadedAddresses ->
-                                                addresses = loadedAddresses
-                                                selectedAddressId = loadedAddresses.find { it.isDefault }?.id
-                                                    ?: loadedAddresses.firstOrNull()?.id
-                                            },
-                                            onError = { errorMessage ->
-                                            }
+                                            onResult = { addresses = it },
+                                            onError = {}
                                         )
                                         navigateBack()
                                     } catch (e: Exception) {
@@ -368,25 +308,19 @@ fun ProfileScreen(
                         )
                     }
                     ProfileScreenType.EditAddress -> {
-                        if (selectedAddressForEdit != null) {
+                        selectedAddressForEdit?.let { address ->
                             AddEditAddressScreen(
-                                address = selectedAddressForEdit,
+                                address = address,
                                 onSave = { updatedAddress ->
                                     coroutineScope.launch {
                                         try {
                                             updateAddressInFirestore(userEmail, updatedAddress, db)
                                             Toast.makeText(context, "Адрес обновлен", Toast.LENGTH_SHORT).show()
-                                            // Перезагружаем адреса после обновления
                                             loadAddressesFromFirestore(
                                                 userEmail = userEmail,
                                                 db = db,
-                                                onResult = { loadedAddresses ->
-                                                    addresses = loadedAddresses
-                                                    selectedAddressId = loadedAddresses.find { it.isDefault }?.id
-                                                        ?: loadedAddresses.firstOrNull()?.id
-                                                },
-                                                onError = { errorMessage ->
-                                                }
+                                                onResult = { addresses = it },
+                                                onError = {}
                                             )
                                             navigateBack()
                                         } catch (e: Exception) {
@@ -431,6 +365,9 @@ fun ProfileScreen(
         }
     }
 }
+
+// Все остальные функции (loadAddressesFromFirestore, setDefaultAddress, addAddressToFirestore, updateAddressInFirestore, deleteAddressFromFirestore, saveUserToFirestore)
+// остаются без изменений, так как они корректны
 
 // Функция для загрузки адресов из Firestore
 fun loadAddressesFromFirestore(
@@ -2669,12 +2606,3 @@ enum class SupportTopic(val title: String) {
     OTHER("Другое")
 }
 
-data class Address(
-    val id: String,
-    val address: String,
-    val apartment: String,
-    val entrance: String,
-    val floor: String,
-    val intercom: String,
-    val isDefault: Boolean = false
-)

@@ -1320,6 +1320,10 @@ fun EnhancedDishDetailsSheet(
     var restaurantRating by remember { mutableStateOf(0.0) }
     var restaurantRatingCount by remember { mutableStateOf(0L) }
 
+    // Загрузка отзывов
+    var reviews by remember { mutableStateOf<List<Review>>(emptyList()) }
+    var loadingReviews by remember { mutableStateOf(false) }
+
     LaunchedEffect(dish.owner) {
         if (dish.owner.isNotBlank()) {
             try {
@@ -1332,6 +1336,12 @@ fun EnhancedDishDetailsSheet(
                 e.printStackTrace()
             }
         }
+    }
+
+    LaunchedEffect(dish.id) {
+        loadingReviews = true
+        reviews = ReviewManager.getReviewsForDish(dish.id)
+        loadingReviews = false
     }
 
     Box(
@@ -1787,7 +1797,136 @@ fun EnhancedDishDetailsSheet(
                 }
                 Spacer(Modifier.height(16.dp))
             }
+            // Улучшенные контролы корзины
+            @Composable
+            fun EnhancedCartControls(dish: Dish, modifier: Modifier = Modifier) {
+                val quantity = rememberCartItemQuantity(dish.id)
+                val discountPercentage = dish.discount?.toDoubleOrNull() ?: 0.0
+                val originalPrice = dish.price.toDoubleOrNull() ?: 0.0
+                val discountedPrice = if (discountPercentage > 0)
+                    originalPrice * (1 - discountPercentage / 100)
+                else originalPrice
 
+                Card(
+                    modifier = modifier,
+                    shape = RoundedCornerShape(20.dp),
+                    elevation = CardDefaults.cardElevation(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    if (quantity == 0) {
+                        Button(
+                            onClick = { CartManager.addToCart(dish) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.AddShoppingCart,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Добавить в корзину",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                "В вашей корзине",
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    IconButton(
+                                        onClick = { CartManager.decrementQuantity(dish.id) },
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                CircleShape
+                                            )
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Remove,
+                                            contentDescription = "Уменьшить",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            quantity.toString(),
+                                            fontSize = 28.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            "шт.",
+                                            fontSize = 12.sp,
+                                            color = Color.Gray
+                                        )
+                                    }
+
+                                    IconButton(
+                                        onClick = { CartManager.incrementQuantity(dish.id) },
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                CircleShape
+                                            )
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            contentDescription = "Увеличить",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                }
+
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        "Итого",
+                                        fontSize = 12.sp,
+                                        color = Color.Gray
+                                    )
+                                    Text(
+                                        "${"%.0f".format(discountedPrice * quantity)} ₸",
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             // Информация о ресторане
             if (restaurantName.isNotBlank()) {
                 Card(
@@ -1874,6 +2013,66 @@ fun EnhancedDishDetailsSheet(
                 Spacer(Modifier.height(20.dp))
             }
 
+            // Отзывы
+            if (loadingReviews) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                }
+            } else if (reviews.isNotEmpty()) {
+                Column {
+                    Text(
+                        "Отзывы (${reviews.size})",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+
+                    reviews.take(3).forEach { review ->
+                        Spacer(Modifier.height(8.dp))
+                        ReviewCard(review = review)
+                    }
+
+                    if (reviews.size > 3) {
+                        TextButton(
+                            onClick = { /* Показать все отзывы */ },
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        ) {
+                            Text("Показать все ${reviews.size} отзывов")
+                        }
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            } else {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Пока нет отзывов",
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            "Будьте первым, кто оценит это блюдо!",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            }
+
             // Кнопки управления корзиной
             EnhancedCartControls(dish = dish, modifier = Modifier.fillMaxWidth())
 
@@ -1882,136 +2081,7 @@ fun EnhancedDishDetailsSheet(
     }
 }
 
-// Улучшенные контролы корзины
-@Composable
-fun EnhancedCartControls(dish: Dish, modifier: Modifier = Modifier) {
-    val quantity = rememberCartItemQuantity(dish.id)
-    val discountPercentage = dish.discount?.toDoubleOrNull() ?: 0.0
-    val originalPrice = dish.price.toDoubleOrNull() ?: 0.0
-    val discountedPrice = if (discountPercentage > 0)
-        originalPrice * (1 - discountPercentage / 100)
-    else originalPrice
 
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        if (quantity == 0) {
-            Button(
-                onClick = { CartManager.addToCart(dish) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Icon(
-                    Icons.Default.AddShoppingCart,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "Добавить в корзину",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Text(
-                    "В вашей корзине",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        IconButton(
-                            onClick = { CartManager.decrementQuantity(dish.id) },
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                    CircleShape
-                                )
-                        ) {
-                            Icon(
-                                Icons.Default.Remove,
-                                contentDescription = "Уменьшить",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                quantity.toString(),
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "шт.",
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        }
-
-                        IconButton(
-                            onClick = { CartManager.incrementQuantity(dish.id) },
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                    CircleShape
-                                )
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = "Увеличить",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            "Итого",
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
-                        Text(
-                            "${"%.0f".format(discountedPrice * quantity)} ₸",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -4,12 +4,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import java.text.SimpleDateFormat
@@ -57,69 +62,29 @@ fun AddDishScreen(
     var discount by remember { mutableStateOf("") }
     var popular by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
 
-    // Подсказки категорий фильтруются по введенному тексту
     val filteredCategories = remember(category) {
         if (!categorySelected && category.isNotBlank())
             categories.filter { it.contains(category, ignoreCase = true) }
         else emptyList()
     }
 
-    // Проверка: введённая категория есть в списке
     val categoryValid = categories.contains(category)
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Добавить блюдо") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("Назад") } }
-            )
-        },
-        bottomBar = {
-            Button(
-                onClick = {
-                    if (name.isBlank() || price.isBlank()) return@Button
-
-                    val finalCategory = if (categoryValid) category else "Другое"
-
-                    val newDish = Dish(
-                        name = name,
-                        price = price,
-                        description = description,
-                        photoUrl = photoUrl,
-                        category = finalCategory,
-                        weightOrVolume = weightOrVolume,
-                        ingredients = ingredients,
-                        calories = calories,
-                        proteins = proteins,
-                        fats = fats,
-                        carbs = carbs,
-                        cookingTime = cookingTime,
-                        spiciness = spiciness,
-                        vegetarian = vegetarian,
-                        allergens = allergens,
-                        addOns = addOns,
-                        addOnsPrice = addOnsPrice,
-                        availability = availability,
-                        ratingAverage = 0.0,
-                        ratingCount = 0L,
-                        portions = portions,
-                        costPrice = costPrice,
-                        discount = discount,
-                        popular = popular,
-                        dateAdded = dateAdded,
-                        owner = currentUserEmail
-                    )
-
-                    db.collection("dishes")
-                        .add(newDish)
-                        .addOnSuccessListener { onBack() }
-                        .addOnFailureListener { /* Можно добавить Toast */ }
+                title = { Text("Добавить блюдо", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                    }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) { Text("Сохранить") }
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
         }
     ) { paddingValues ->
         LazyColumn(
@@ -130,22 +95,32 @@ fun AddDishScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
+                Text(
+                    "Основная информация",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Название блюда") },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text("Название блюда *") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    isError = name.isBlank()
                 )
 
                 OutlinedTextField(
                     value = price,
                     onValueChange = { price = it },
-                    label = { Text("Цена") },
+                    label = { Text("Цена *") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    isError = price.isBlank()
                 )
 
-                // --- Категория с автоподсказками ---
                 Column {
                     OutlinedTextField(
                         value = category,
@@ -154,11 +129,11 @@ fun AddDishScreen(
                             categorySelected = false
                         },
                         label = { Text("Категория") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium
                     )
 
-                    // Показываем подсказки только если они есть
-                    filteredCategories.forEach { cat ->
+                    filteredCategories.take(5).forEach { cat ->
                         Text(
                             text = cat,
                             modifier = Modifier
@@ -167,67 +142,309 @@ fun AddDishScreen(
                                     category = cat
                                     categorySelected = true
                                 }
-                                .padding(vertical = 6.dp),
+                                .padding(vertical = 8.dp, horizontal = 12.dp),
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
 
-                    // Если подсказок нет, текст не пустой, и категория не выбрана корректно — показываем предупреждение
                     if (category.isNotBlank() && filteredCategories.isEmpty() && !categoryValid) {
                         Text(
-                            text = "Такой категории нет, выберите «Другое»",
-                            color = Color.Red,
+                            text = "Такой категории нет, будет сохранено как «Другое»",
+                            color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
                 }
 
-                // Остальные поля
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
                     label = { Text("Описание") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    shape = MaterialTheme.shapes.medium
                 )
 
                 OutlinedTextField(
                     value = photoUrl,
                     onValueChange = { photoUrl = it },
                     label = { Text("Ссылка на фото") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
+                )
+            }
+
+            item {
+                Text(
+                    "Характеристики",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                 )
 
-                OutlinedTextField(weightOrVolume, { weightOrVolume = it }, label = { Text("Вес / объём") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(ingredients, { ingredients = it }, label = { Text("Ингредиенты") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(calories, { calories = it }, label = { Text("Калорийность") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(proteins, { proteins = it }, label = { Text("Белки") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(fats, { fats = it }, label = { Text("Жиры") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(carbs, { carbs = it }, label = { Text("Углеводы") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(cookingTime, { cookingTime = it }, label = { Text("Время приготовления") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(spiciness, { spiciness = it }, label = { Text("Острота") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    value = weightOrVolume,
+                    onValueChange = { weightOrVolume = it },
+                    label = { Text("Вес / объём") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
+                )
 
-                Row {
-                    Checkbox(checked = vegetarian, onCheckedChange = { vegetarian = it })
-                    Text("Вегетарианское", modifier = Modifier.padding(start = 4.dp))
+                OutlinedTextField(
+                    value = ingredients,
+                    onValueChange = { ingredients = it },
+                    label = { Text("Ингредиенты") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    shape = MaterialTheme.shapes.medium
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = calories,
+                        onValueChange = { calories = it },
+                        label = { Text("Калории") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    OutlinedTextField(
+                        value = cookingTime,
+                        onValueChange = { cookingTime = it },
+                        label = { Text("Время (мин)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium
+                    )
                 }
 
-                OutlinedTextField(allergens, { allergens = it }, label = { Text("Аллергены") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(addOns, { addOns = it }, label = { Text("Возможные добавки") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(addOnsPrice, { addOnsPrice = it }, label = { Text("Цена добавок") }, modifier = Modifier.fillMaxWidth())
-
-                Row {
-                    Checkbox(checked = availability, onCheckedChange = { availability = it })
-                    Text("Доступно", modifier = Modifier.padding(start = 4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = proteins,
+                        onValueChange = { proteins = it },
+                        label = { Text("Белки") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    OutlinedTextField(
+                        value = fats,
+                        onValueChange = { fats = it },
+                        label = { Text("Жиры") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    OutlinedTextField(
+                        value = carbs,
+                        onValueChange = { carbs = it },
+                        label = { Text("Углеводы") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium
+                    )
                 }
 
-                OutlinedTextField(portions, { portions = it }, label = { Text("Количество порций") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(costPrice, { costPrice = it }, label = { Text("Себестоимость") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(discount, { discount = it }, label = { Text("Скидка / акция") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    value = spiciness,
+                    onValueChange = { spiciness = it },
+                    label = { Text("Острота (1-5)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
+                )
 
-                Row {
-                    Checkbox(checked = popular, onCheckedChange = { popular = it })
-                    Text("Популярное блюдо", modifier = Modifier.padding(start = 4.dp))
+                OutlinedTextField(
+                    value = allergens,
+                    onValueChange = { allergens = it },
+                    label = { Text("Аллергены") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
+                )
+            }
+
+            item {
+                Text(
+                    "Дополнительно",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = addOns,
+                        onValueChange = { addOns = it },
+                        label = { Text("Возможные добавки") },
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    OutlinedTextField(
+                        value = addOnsPrice,
+                        onValueChange = { addOnsPrice = it },
+                        label = { Text("Цена добавок") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = portions,
+                        onValueChange = { portions = it },
+                        label = { Text("Количество порций") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    OutlinedTextField(
+                        value = costPrice,
+                        onValueChange = { costPrice = it },
+                        label = { Text("Себестоимость") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium
+                    )
+                }
+
+                OutlinedTextField(
+                    value = discount,
+                    onValueChange = { discount = it },
+                    label = { Text("Скидка (%)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = vegetarian,
+                        onCheckedChange = { vegetarian = it },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = Color(0xFF4CAF50)
+                        )
+                    )
+                    Text("Вегетарианское", modifier = Modifier.padding(start = 8.dp))
+
+                    Spacer(modifier = Modifier.width(24.dp))
+
+                    Checkbox(
+                        checked = popular,
+                        onCheckedChange = { popular = it },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = Color(0xFFFF9800)
+                        )
+                    )
+                    Text("Популярное", modifier = Modifier.padding(start = 8.dp))
+
+                    Spacer(modifier = Modifier.width(24.dp))
+
+                    Checkbox(
+                        checked = availability,
+                        onCheckedChange = { availability = it },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = Color(0xFF2196F3)
+                        )
+                    )
+                    Text("Доступно", modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(32.dp))
+
+                if (error.isNotEmpty()) {
+                    Text(
+                        error,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        if (name.isBlank() || price.isBlank()) {
+                            error = "Заполните обязательные поля: название и цена"
+                            return@Button
+                        }
+
+                        isLoading = true
+                        error = ""
+
+                        val finalCategory = if (categoryValid) category else "Другое"
+
+                        val newDish = hashMapOf<String, Any>(
+                            "name" to name,
+                            "price" to price,
+                            "description" to description,
+                            "photoUrl" to photoUrl,
+                            "category" to finalCategory,
+                            "weightOrVolume" to weightOrVolume,
+                            "ingredients" to ingredients,
+                            "calories" to calories,
+                            "proteins" to proteins,
+                            "fats" to fats,
+                            "carbs" to carbs,
+                            "cookingTime" to cookingTime,
+                            "spiciness" to spiciness,
+                            "vegetarian" to vegetarian,
+                            "allergens" to allergens,
+                            "addOns" to addOns,
+                            "addOnsPrice" to addOnsPrice,
+                            "availability" to availability,
+                            "ratingAverage" to 0.0,
+                            "ratingCount" to 0L,
+                            "portions" to portions,
+                            "costPrice" to costPrice,
+                            "discount" to discount,
+                            "popular" to popular,
+                            "dateAdded" to dateAdded,
+                            "owner" to currentUserEmail
+                        )
+
+                        db.collection("dishes")
+                            .add(newDish)
+                            .addOnSuccessListener {
+                                isLoading = false
+                                onBack()
+                            }
+                            .addOnFailureListener { e ->
+                                isLoading = false
+                                error = "Ошибка сохранения: ${e.message}"
+                            }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = MaterialTheme.shapes.large,
+                    enabled = !isLoading
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Сохранить блюдо", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(80.dp))

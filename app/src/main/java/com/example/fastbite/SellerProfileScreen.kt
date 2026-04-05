@@ -1166,6 +1166,8 @@ fun ReviewCard(review: Review) {
 }
 
 // ===== ФУНКЦИЯ ЗАГРУЗКИ БЛЮД С ОТЗЫВАМИ =====
+// Замените существующую функцию loadDishesWithReviews на эту:
+
 fun loadDishesWithReviews(
     db: com.google.firebase.firestore.FirebaseFirestore,
     ownerEmail: String,
@@ -1182,7 +1184,10 @@ fun loadDishesWithReviews(
                 return@addOnSuccessListener
             }
 
-            dishResult.documents.forEachIndexed { index, dishDoc ->
+            val remaining = dishResult.size()
+            var completed = 0
+
+            dishResult.documents.forEach { dishDoc ->
                 val dish = Dish(
                     id = dishDoc.id,
                     name = dishDoc.getString("name") ?: "",
@@ -1206,9 +1211,11 @@ fun loadDishesWithReviews(
                     availability = dishDoc.getBoolean("availability") ?: true
                 )
 
-                // Загружаем отзывы для этого блюда
-                db.collection("reviews")
-                    .whereEqualTo("dishId", dishDoc.id)
+                // Загружаем отзывы из подколлекции
+                db.collection("dishes")
+                    .document(dishDoc.id)
+                    .collection("reviews")
+                    .orderBy("date", com.google.firebase.firestore.Query.Direction.DESCENDING)
                     .get()
                     .addOnSuccessListener { reviewResult ->
                         val reviews = reviewResult.documents.map { reviewDoc ->
@@ -1219,25 +1226,30 @@ fun loadDishesWithReviews(
                                 rating = reviewDoc.getDouble("rating") ?: 0.0,
                                 comment = reviewDoc.getString("comment") ?: "",
                                 date = reviewDoc.getString("date") ?: "",
-                                dishId = reviewDoc.getString("dishId") ?: dishDoc.id
+                                dishId = dishDoc.id
                             )
                         }
 
                         dishesWithReviews.add(DishWithReviews(dish = dish, reviews = reviews))
+                        completed++
 
-                        // Если загрузили все блюда, вызываем колбэк
-                        if (dishesWithReviews.size == dishResult.size()) {
-                            onLoaded(dishesWithReviews)
+                        if (completed == remaining) {
+                            onLoaded(dishesWithReviews.sortedByDescending {
+                                it.reviews.size
+                            })
                         }
                     }
                     .addOnFailureListener {
-                        // Если не удалось загрузить отзывы, добавляем блюдо без них
                         dishesWithReviews.add(DishWithReviews(dish = dish, reviews = emptyList()))
+                        completed++
 
-                        if (dishesWithReviews.size == dishResult.size()) {
+                        if (completed == remaining) {
                             onLoaded(dishesWithReviews)
                         }
                     }
             }
+        }
+        .addOnFailureListener {
+            onLoaded(emptyList())
         }
 }
