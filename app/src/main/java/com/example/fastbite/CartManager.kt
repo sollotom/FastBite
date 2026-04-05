@@ -7,6 +7,9 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -34,6 +37,9 @@ object CartManager {
     private val _cartItems = mutableStateListOf<CartItem>()
     val cartItems: SnapshotStateList<CartItem> = _cartItems
 
+    // Flow для отслеживания изменений количества каждого блюда
+    private val _quantityFlows = mutableMapOf<String, MutableStateFlow<Int>>()
+
     private val db = Firebase.firestore
     private val auth = FirebaseAuth.getInstance()
 
@@ -44,6 +50,30 @@ object CartManager {
 
     init {
         loadCartFromFirebase()
+    }
+
+    // Метод для подписки на изменения количества конкретного блюда
+    @Composable
+    fun observeQuantity(dishId: String): State<Int> {
+        // Создаем или получаем существующий StateFlow для этого блюда
+        val flow = _quantityFlows.getOrPut(dishId) {
+            MutableStateFlow(getItemQuantity(dishId))
+        }
+
+        // Подписываемся на изменения
+        val quantity by flow.collectAsState()
+
+        // Обновляем значение при изменении корзины
+        LaunchedEffect(dishId, _cartItems.size) {
+            flow.value = getItemQuantity(dishId)
+        }
+
+        return remember(quantity) { mutableStateOf(quantity) }
+    }
+
+    // Обновляет все потоки количества
+    private fun updateQuantityFlow(dishId: String) {
+        _quantityFlows[dishId]?.value = getItemQuantity(dishId)
     }
 
     private fun loadCartFromFirebase() {
@@ -71,6 +101,11 @@ object CartManager {
                         }
                         _cartItems.clear()
                         _cartItems.addAll(items.sortedBy { it.addedAt })
+
+                        // Обновляем все потоки количества
+                        _quantityFlows.keys.forEach { dishId ->
+                            updateQuantityFlow(dishId)
+                        }
                     }
                 }
         }
@@ -133,6 +168,7 @@ object CartManager {
         } else {
             val newItem = CartItem(dish)
             _cartItems.add(newItem)
+            updateQuantityFlow(dish.id)
             ioScope.launch {
                 saveCartItemToFirebase(dish, 1)
             }
@@ -141,6 +177,7 @@ object CartManager {
 
     fun removeFromCart(dishId: String) {
         _cartItems.removeAll { it.dish.id == dishId }
+        updateQuantityFlow(dishId)
         ioScope.launch {
             removeCartItemFromFirebase(dishId)
         }
@@ -151,6 +188,7 @@ object CartManager {
         if (item != null) {
             if (quantity > 0) {
                 item.quantity = quantity
+                updateQuantityFlow(dishId)
                 ioScope.launch {
                     updateQuantityInFirebase(dishId, quantity)
                 }
@@ -164,6 +202,7 @@ object CartManager {
         val item = _cartItems.find { it.dish.id == dishId }
         item?.let {
             it.quantity++
+            updateQuantityFlow(dishId)
             ioScope.launch {
                 updateQuantityInFirebase(dishId, it.quantity)
             }
@@ -175,6 +214,7 @@ object CartManager {
         item?.let {
             if (it.quantity > 1) {
                 it.quantity--
+                updateQuantityFlow(dishId)
                 ioScope.launch {
                     updateQuantityInFirebase(dishId, it.quantity)
                 }
@@ -186,6 +226,9 @@ object CartManager {
 
     fun clearCart() {
         _cartItems.clear()
+        _quantityFlows.keys.forEach { dishId ->
+            updateQuantityFlow(dishId)
+        }
         ioScope.launch {
             clearCartInFirebase()
         }
