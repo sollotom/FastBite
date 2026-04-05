@@ -26,12 +26,13 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckoutScreen(
     onBackClick: () -> Unit,
-    onOrderConfirmed: () -> Unit = {}
+    onOrderConfirmed: () -> Unit
 ) {
     val db = Firebase.firestore
     val auth = FirebaseAuth.getInstance()
@@ -39,7 +40,6 @@ fun CheckoutScreen(
     val currentUserEmail = currentUser?.email ?: ""
     val coroutineScope = rememberCoroutineScope()
 
-    // Состояния для UI
     var isLoading by remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
     var showErrorDialog by remember { mutableStateOf(false) }
@@ -49,7 +49,7 @@ fun CheckoutScreen(
     val totalPrice by derivedStateOf { CartManager.getTotalPrice() }
     val totalItems by derivedStateOf { CartManager.getTotalItems() }
 
-    // Состояние для формы
+    // Состояния для формы
     var deliveryAddress by remember { mutableStateOf("") }
     var apartment by remember { mutableStateOf("") }
     var entrance by remember { mutableStateOf("") }
@@ -59,56 +59,63 @@ fun CheckoutScreen(
     var leaveAtDoor by remember { mutableStateOf(false) }
     var noCall by remember { mutableStateOf(false) }
 
-    // Выбор метода оплаты - начинаем с null
     var selectedPaymentMethod by remember { mutableStateOf<PaymentMethod?>(null) }
 
-    // Поля для карты (только для оплаты картой)
     var cardNumber by remember { mutableStateOf("") }
     var cardExpiry by remember { mutableStateOf("") }
     var cardCVC by remember { mutableStateOf("") }
     var cardholderName by remember { mutableStateOf("") }
     var saveCard by remember { mutableStateOf(false) }
 
-    // Контактная информация
     var userPhone by remember { mutableStateOf("") }
     var userEmail by remember { mutableStateOf(currentUserEmail) }
+    var userName by remember { mutableStateOf("") }
 
-    // Состояние для выбора сохраненных адресов/карт
     var showSavedAddresses by remember { mutableStateOf(false) }
     var showSavedCards by remember { mutableStateOf(false) }
-    var savedAddresses by remember { mutableStateOf(listOf<String>()) }
-    var savedCards by remember { mutableStateOf(listOf<String>()) }
+    var savedAddresses by remember { mutableStateOf<List<Address>>(emptyList()) }
+    var savedCards by remember { mutableStateOf<List<CardInfo>>(emptyList()) }
 
-    // Загружаем сохраненные адреса и карты пользователя
+    // Загружаем данные пользователя
     LaunchedEffect(currentUserEmail) {
         if (currentUserEmail.isNotBlank()) {
-            // Загружаем данные профиля
-            db.collection("users").document(currentUserEmail).get()
-                .addOnSuccessListener { doc ->
-                    if (doc.exists()) {
-                        userPhone = doc.getString("phone") ?: ""
-                        // Загружаем последний адрес
-                        db.collection("users").document(currentUserEmail)
-                            .collection("addresses")
-                            .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                            .limit(1)
-                            .get()
-                            .addOnSuccessListener { addresses ->
-                                if (!addresses.isEmpty) {
-                                    val latestAddress = addresses.documents[0]
-                                    deliveryAddress = latestAddress.getString("address") ?: ""
-                                    apartment = latestAddress.getString("apartment") ?: ""
-                                    entrance = latestAddress.getString("entrance") ?: ""
-                                    floor = latestAddress.getString("floor") ?: ""
-                                    intercom = latestAddress.getString("intercom") ?: ""
-                                }
-                            }
-                    }
+            try {
+                val userDoc = db.collection("users").document(currentUserEmail).get().await()
+                userName = userDoc.getString("name") ?: ""
+                userPhone = userDoc.getString("phone") ?: ""
+
+                // Загружаем сохраненные адреса
+                val addressesSnapshot = db.collection("users").document(currentUserEmail)
+                    .collection("address")
+                    .get()
+                    .await()
+                savedAddresses = addressesSnapshot.documents.mapNotNull { doc ->
+                    Address(
+                        id = doc.id,
+                        address = doc.getString("address") ?: return@mapNotNull null,
+                        apartment = doc.getString("apartment") ?: "",
+                        entrance = doc.getString("entrance") ?: "",
+                        floor = doc.getString("floor") ?: "",
+                        intercom = doc.getString("intercom") ?: "",
+                        isDefault = doc.getBoolean("isDefault") ?: false
+                    )
                 }
+
+                // Устанавливаем адрес по умолчанию
+                val defaultAddress = savedAddresses.find { it.isDefault }
+                defaultAddress?.let {
+                    deliveryAddress = it.address
+                    apartment = it.apartment
+                    entrance = it.entrance
+                    floor = it.floor
+                    intercom = it.intercom
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
-    // Вычисляем, можно ли подтвердить заказ
     val canConfirmOrder = remember(
         deliveryAddress, selectedPaymentMethod, cardNumber,
         cardExpiry, cardCVC, cardholderName, userPhone, userEmail
@@ -132,7 +139,6 @@ fun CheckoutScreen(
         cartItems.isNotEmpty() && hasValidAddress && hasValidContact && hasValidEmail && hasValidPayment
     }
 
-    // Функция сохранения заказа в Firebase
     fun saveOrderToFirebase() {
         if (currentUserEmail.isBlank()) {
             errorMessage = "Пользователь не авторизован"
@@ -142,96 +148,111 @@ fun CheckoutScreen(
 
         isLoading = true
 
-        // Создаем объект заказа с явным указанием типа
-        val order = hashMapOf<String, Any>(
+        // Получаем ресторан из первого блюда (все блюда из одного ресторана)
+        val restaurantId = cartItems.firstOrNull()?.dish?.owner ?: ""
+        val restaurantName = "Ресторан" // Можно загрузить из Firestore
+
+        val orderData = hashMapOf<String, Any>(
             "userId" to currentUserEmail,
+            "userName" to userName,
             "userEmail" to userEmail,
             "userPhone" to userPhone,
-            "deliveryAddress" to deliveryAddress,
-            "apartment" to apartment,
-            "entrance" to entrance,
-            "floor" to floor,
-            "intercom" to intercom,
+            "restaurantId" to restaurantId,
+            "restaurantName" to restaurantName,
+            "deliveryAddress" to mapOf(
+                "address" to deliveryAddress,
+                "apartment" to apartment,
+                "entrance" to entrance,
+                "floor" to floor,
+                "intercom" to intercom
+            ),
             "deliveryComment" to deliveryComment,
             "leaveAtDoor" to leaveAtDoor,
             "noCall" to noCall,
-            "paymentMethod" to (selectedPaymentMethod?.name ?: "CASH"),
-            "totalPrice" to totalPrice,
-            "totalItems" to totalItems,
-            "status" to "НОВЫЙ",
+            "paymentMethod" to (selectedPaymentMethod?.displayName ?: "Наличными"),
+            "totalAmount" to totalPrice,
+            "status" to "PENDING",
             "createdAt" to FieldValue.serverTimestamp(),
             "updatedAt" to FieldValue.serverTimestamp()
         )
 
-        // Если оплата картой, сохраняем информацию о карте
-        if (selectedPaymentMethod == PaymentMethod.CARD && saveCard) {
-            order["cardLast4"] = cardNumber.takeLast(4)
-        }
-
-        // Сохраняем заказ в коллекцию orders
-        db.collection("orders").add(order)
+        db.collection("orders").add(orderData)
             .addOnSuccessListener { orderDoc ->
-                // Сохраняем товары заказа в подколлекцию
                 val orderId = orderDoc.id
                 val batch = db.batch()
 
+                // Сначала создаем список данных для сохранения
+                val orderItemsDataList = mutableListOf<Map<String, Any>>()
+
                 cartItems.forEach { cartItem ->
+                    val discountPercentage = cartItem.dish.discount?.toDoubleOrNull() ?: 0.0
+                    val originalPrice = cartItem.dish.price.toDoubleOrNull() ?: 0.0
+                    val discountedPrice = if (discountPercentage > 0)
+                        originalPrice * (1 - discountPercentage / 100)
+                    else originalPrice
+
                     val orderItem = hashMapOf<String, Any>(
                         "orderId" to orderId,
                         "dishId" to cartItem.dish.id,
                         "dishName" to cartItem.dish.name,
                         "quantity" to cartItem.quantity,
-                        "price" to (cartItem.dish.price.toDoubleOrNull() ?: 0.0),
-                        "discount" to (cartItem.dish.discount?.toDoubleOrNull() ?: 0.0),
-                        "totalPrice" to ((cartItem.dish.price.toDoubleOrNull() ?: 0.0) * cartItem.quantity)
+                        "price" to discountedPrice,
+                        "totalPrice" to discountedPrice * cartItem.quantity,
+                        "photoUrl" to cartItem.dish.photoUrl,
+                        "restaurantId" to restaurantId,
+                        "restaurantName" to restaurantName
                     )
 
                     val itemRef = db.collection("orders").document(orderId)
                         .collection("items").document(cartItem.dish.id)
                     batch.set(itemRef, orderItem)
+
+                    // Сохраняем для подколлекции пользователя
+                    orderItemsDataList.add(
+                        hashMapOf(
+                            "dishId" to cartItem.dish.id,
+                            "dishName" to cartItem.dish.name,
+                            "quantity" to cartItem.quantity,
+                            "price" to discountedPrice,
+                            "restaurantId" to restaurantId,
+                            "restaurantName" to restaurantName
+                        )
+                    )
                 }
 
                 batch.commit()
                     .addOnSuccessListener {
-                        // Очищаем корзину
-                        CartManager.clearCart()
-
-                        // Сохраняем адрес, если нужно
-                        if (deliveryAddress.isNotBlank() && savedAddresses.none { it == deliveryAddress }) {
-                            val addressData = hashMapOf<String, Any>(
-                                "address" to deliveryAddress,
-                                "apartment" to apartment,
-                                "entrance" to entrance,
-                                "floor" to floor,
-                                "intercom" to intercom,
-                                "createdAt" to FieldValue.serverTimestamp()
+                        // Сохраняем информацию о заказе для возможности оставить отзыв
+                        db.collection("users").document(currentUserEmail)
+                            .collection("orders")
+                            .document(orderId)
+                            .set(
+                                hashMapOf(
+                                    "orderId" to orderId,
+                                    "items" to orderItemsDataList,
+                                    "createdAt" to FieldValue.serverTimestamp(),
+                                    "status" to "PENDING",
+                                    "restaurantId" to restaurantId,
+                                    "restaurantName" to restaurantName,
+                                    "totalAmount" to totalPrice
+                                )
                             )
-
-                            db.collection("users").document(currentUserEmail)
-                                .collection("addresses")
-                                .add(addressData)
-                        }
-
-                        // Сохраняем карту, если нужно
-                        if (selectedPaymentMethod == PaymentMethod.CARD && saveCard && cardNumber.isNotBlank()) {
-                            val cardData = hashMapOf<String, Any>(
-                                "last4" to cardNumber.takeLast(4),
-                                "expiry" to cardExpiry,
-                                "cardholderName" to cardholderName,
-                                "createdAt" to FieldValue.serverTimestamp()
-                            )
-
-                            db.collection("users").document(currentUserEmail)
-                                .collection("cards")
-                                .add(cardData)
-                        }
-
-                        isLoading = false
-                        showSuccessDialog = true
+                            .addOnSuccessListener {
+                                CartManager.clearCart()
+                                isLoading = false
+                                showSuccessDialog = true
+                            }
+                            .addOnFailureListener { e ->
+                                CartManager.clearCart()
+                                isLoading = false
+                                showSuccessDialog = true
+                                // Логируем ошибку, но не показываем пользователю, так как заказ уже создан
+                                e.printStackTrace()
+                            }
                     }
                     .addOnFailureListener { e ->
                         isLoading = false
-                        errorMessage = "Ошибка при сохранении товаров: ${e.message}"
+                        errorMessage = "Ошибка при сохранении заказа: ${e.message}"
                         showErrorDialog = true
                     }
             }
@@ -247,7 +268,7 @@ fun CheckoutScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "Оформление заказа",
+                        text = "Оформление заказа",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -256,7 +277,10 @@ fun CheckoutScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
         bottomBar = {
@@ -277,25 +301,22 @@ fun CheckoutScreen(
                     ) {
                         Column {
                             Text(
-                                "Итого: ${"%.0f".format(totalPrice)} тг",
+                                text = "Итого: ${"%.0f".format(totalPrice)} тг",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "$totalItems ${getItemsText(totalItems)}",
+                                text = "$totalItems ${getItemsWord(totalItems)}",
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
                         }
 
                         Button(
-                            onClick = {
-                                coroutineScope.launch {
-                                    saveOrderToFirebase()
-                                }
-                            },
+                            onClick = { saveOrderToFirebase() },
                             modifier = Modifier.height(50.dp),
-                            enabled = canConfirmOrder && !isLoading
+                            enabled = canConfirmOrder && !isLoading,
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             if (isLoading) {
                                 CircularProgressIndicator(
@@ -304,7 +325,7 @@ fun CheckoutScreen(
                                     strokeWidth = 2.dp
                                 )
                             } else {
-                                Text("Подтвердить заказ", fontSize = 16.sp)
+                                Text(text = "Подтвердить заказ", fontSize = 16.sp)
                             }
                         }
                     }
@@ -319,9 +340,8 @@ fun CheckoutScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Секция с товарами
             item {
-                Text("Ваш заказ", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(text = "Ваш заказ", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             }
 
             items(cartItems) { cartItem ->
@@ -330,68 +350,66 @@ fun CheckoutScreen(
 
             item { Spacer(Modifier.height(8.dp)) }
 
-            // Секция контактной информации
             item {
-                Text("Контактная информация", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(text = "Контактная информация", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+
+                OutlinedTextField(
+                    value = userName,
+                    onValueChange = { userName = it },
+                    label = { Text("Имя *") },
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
+                    shape = RoundedCornerShape(12.dp)
+                )
 
                 OutlinedTextField(
                     value = userEmail,
                     onValueChange = { userEmail = it },
-                    label = { Text("Email*") },
+                    label = { Text("Email *") },
                     modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = {
-                        Icon(Icons.Outlined.Email, contentDescription = null)
-                    },
-                    enabled = false // Email из профиля, не редактируемый
+                    leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
+                    enabled = false,
+                    shape = RoundedCornerShape(12.dp)
                 )
 
                 OutlinedTextField(
                     value = userPhone,
-                    onValueChange = {
-                        if (it.length <= 11) userPhone = it
-                    },
-                    label = { Text("Телефон*") },
+                    onValueChange = { if (it.length <= 15) userPhone = it },
+                    label = { Text("Телефон *") },
                     modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = {
-                        Icon(Icons.Outlined.Phone, contentDescription = null)
-                    },
+                    leadingIcon = { Icon(Icons.Outlined.Phone, contentDescription = null) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    placeholder = { Text("+7 (XXX) XXX-XX-XX") }
+                    placeholder = { Text("+7 (XXX) XXX-XX-XX") },
+                    shape = RoundedCornerShape(12.dp)
                 )
             }
 
             item { Spacer(Modifier.height(8.dp)) }
 
-            // Секция доставки
             item {
-                Text("Доставка", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(text = "Доставка", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
-                // Кнопка выбора сохраненного адреса
                 if (savedAddresses.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp)
+                    OutlinedButton(
+                        onClick = { showSavedAddresses = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        OutlinedButton(
-                            onClick = { showSavedAddresses = true },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Outlined.LocationOn, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Выбрать сохраненный адрес")
-                        }
+                        Icon(Icons.Outlined.LocationOn, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(text = "Выбрать сохраненный адрес")
                     }
+                    Spacer(Modifier.height(8.dp))
                 }
 
                 OutlinedTextField(
                     value = deliveryAddress,
                     onValueChange = { deliveryAddress = it },
-                    label = { Text("Адрес доставки*") },
+                    label = { Text("Адрес доставки *") },
                     modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = {
-                        Icon(Icons.Outlined.LocationOn, contentDescription = null)
-                    }
+                    leadingIcon = { Icon(Icons.Outlined.LocationOn, contentDescription = null) },
+                    shape = RoundedCornerShape(12.dp),
+                    isError = deliveryAddress.isBlank()
                 )
 
                 Row(
@@ -403,14 +421,16 @@ fun CheckoutScreen(
                         onValueChange = { apartment = it },
                         label = { Text("Квартира") },
                         modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        shape = RoundedCornerShape(12.dp)
                     )
                     OutlinedTextField(
                         value = entrance,
                         onValueChange = { entrance = it },
                         label = { Text("Подъезд") },
                         modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
 
@@ -423,91 +443,55 @@ fun CheckoutScreen(
                         onValueChange = { floor = it },
                         label = { Text("Этаж") },
                         modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        shape = RoundedCornerShape(12.dp)
                     )
                     OutlinedTextField(
                         value = intercom,
                         onValueChange = { intercom = it },
                         label = { Text("Домофон") },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
             }
 
-            // Дополнительные опции доставки
             item {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = deliveryComment,
                         onValueChange = { deliveryComment = it },
                         label = { Text("Комментарий для курьера") },
                         modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = {
-                            Icon(Icons.Outlined.Comment, contentDescription = null)
-                        },
-                        maxLines = 3
+                        leadingIcon = { Icon(Icons.Outlined.Comment, contentDescription = null) },
+                        maxLines = 3,
+                        shape = RoundedCornerShape(12.dp)
                     )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Checkbox(
-                            checked = leaveAtDoor,
-                            onCheckedChange = { leaveAtDoor = it }
-                        )
-                        Text(
-                            "Оставить у двери",
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
+                        Checkbox(checked = leaveAtDoor, onCheckedChange = { leaveAtDoor = it })
+                        Text(text = "Оставить у двери", modifier = Modifier.padding(start = 8.dp))
                     }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Checkbox(
-                            checked = noCall,
-                            onCheckedChange = { noCall = it }
-                        )
-                        Text(
-                            "Не звонить, сообщить в чат",
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
+                        Checkbox(checked = noCall, onCheckedChange = { noCall = it })
+                        Text(text = "Не звонить, сообщить в чат", modifier = Modifier.padding(start = 8.dp))
                     }
                 }
             }
 
             item { Spacer(Modifier.height(8.dp)) }
 
-            // Секция оплаты
             item {
-                Text("Оплата", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(text = "Оплата", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
-                // Кнопка выбора сохраненной карты
-                if (savedCards.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { showSavedCards = true },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Outlined.CreditCard, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Выбрать сохраненную карту")
-                        }
-                    }
-                }
-
-                // Методы оплаты
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     PaymentMethod.values().forEach { method ->
                         Row(
                             modifier = Modifier
@@ -531,7 +515,7 @@ fun CheckoutScreen(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                method.displayName,
+                                text = method.displayName,
                                 modifier = Modifier.padding(start = 12.dp),
                                 fontSize = 16.sp
                             )
@@ -539,7 +523,6 @@ fun CheckoutScreen(
                     }
                 }
 
-                // Форма для карты
                 if (selectedPaymentMethod == PaymentMethod.CARD) {
                     Column(
                         modifier = Modifier.padding(top = 16.dp),
@@ -547,16 +530,13 @@ fun CheckoutScreen(
                     ) {
                         OutlinedTextField(
                             value = cardNumber,
-                            onValueChange = {
-                                if (it.length <= 19) cardNumber = it.formatCardNumber()
-                            },
-                            label = { Text("Номер карты*") },
+                            onValueChange = { if (it.length <= 19) cardNumber = it.formatCardNumber() },
+                            label = { Text("Номер карты *") },
                             modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(Icons.Outlined.CreditCard, contentDescription = null)
-                            },
+                            leadingIcon = { Icon(Icons.Outlined.CreditCard, contentDescription = null) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            placeholder = { Text("1234 5678 9012 3456") }
+                            placeholder = { Text("1234 5678 9012 3456") },
+                            shape = RoundedCornerShape(12.dp)
                         )
 
                         Row(
@@ -565,45 +545,38 @@ fun CheckoutScreen(
                         ) {
                             OutlinedTextField(
                                 value = cardExpiry,
-                                onValueChange = {
-                                    if (it.length <= 5) cardExpiry = it.formatExpiryDate()
-                                },
-                                label = { Text("Срок действия*") },
+                                onValueChange = { if (it.length <= 5) cardExpiry = it.formatExpiryDate() },
+                                label = { Text("Срок действия *") },
                                 modifier = Modifier.weight(1f),
-                                placeholder = { Text("MM/YY") }
+                                placeholder = { Text("MM/YY") },
+                                shape = RoundedCornerShape(12.dp)
                             )
                             OutlinedTextField(
                                 value = cardCVC,
-                                onValueChange = {
-                                    if (it.length <= 3) cardCVC = it
-                                },
-                                label = { Text("CVC*") },
+                                onValueChange = { if (it.length <= 3) cardCVC = it },
+                                label = { Text("CVC *") },
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                placeholder = { Text("123") }
+                                placeholder = { Text("123") },
+                                shape = RoundedCornerShape(12.dp)
                             )
                         }
 
                         OutlinedTextField(
                             value = cardholderName,
                             onValueChange = { cardholderName = it },
-                            label = { Text("Имя держателя карты*") },
+                            label = { Text("Имя держателя карты *") },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("IVAN IVANOV") }
+                            placeholder = { Text("IVAN IVANOV") },
+                            shape = RoundedCornerShape(12.dp)
                         )
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Checkbox(
-                                checked = saveCard,
-                                onCheckedChange = { saveCard = it }
-                            )
-                            Text(
-                                "Сохранить карту для будущих покупок",
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
+                            Checkbox(checked = saveCard, onCheckedChange = { saveCard = it })
+                            Text(text = "Сохранить карту для будущих покупок", modifier = Modifier.padding(start = 8.dp))
                         }
                     }
                 }
@@ -625,7 +598,11 @@ fun CheckoutScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    deliveryAddress = address
+                                    deliveryAddress = address.address
+                                    apartment = address.apartment
+                                    entrance = address.entrance
+                                    floor = address.floor
+                                    intercom = address.intercom
                                     showSavedAddresses = false
                                 }
                                 .padding(vertical = 4.dp),
@@ -638,23 +615,16 @@ fun CheckoutScreen(
                                 modifier = Modifier.padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    Icons.Outlined.LocationOn,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                                Icon(Icons.Outlined.LocationOn, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(12.dp))
-                                Text(address)
+                                Column {
+                                    Text(text = address.address, fontWeight = FontWeight.Medium)
+                                    if (address.isDefault) {
+                                        Text(text = "Основной адрес", fontSize = 12.sp, color = Color.Gray)
+                                    }
+                                }
                             }
                         }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = { showSavedAddresses = false },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Добавить новый адрес")
                     }
                 }
             },
@@ -666,62 +636,6 @@ fun CheckoutScreen(
         )
     }
 
-    // Диалог выбора сохраненных карт
-    if (showSavedCards) {
-        AlertDialog(
-            onDismissRequest = { showSavedCards = false },
-            title = { Text("Выберите карту") },
-            text = {
-                Column {
-                    savedCards.forEachIndexed { index, card ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    // Здесь можно предзаполнить данные карты
-                                    // В реальном приложении нужно загружать полные данные карты из БД
-                                    cardNumber = "**** **** **** ${card.takeLast(4)}"
-                                    showSavedCards = false
-                                }
-                                .padding(vertical = 4.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Outlined.CreditCard,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(Modifier.width(12.dp))
-                                Text(card)
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = { showSavedCards = false },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Добавить новую карту")
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showSavedCards = false }) {
-                    Text("Отмена")
-                }
-            }
-        )
-    }
-
-    // Диалог успешного заказа
     if (showSuccessDialog) {
         AlertDialog(
             onDismissRequest = { showSuccessDialog = false },
@@ -741,15 +655,16 @@ fun CheckoutScreen(
                         showSuccessDialog = false
                         onOrderConfirmed()
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Отлично")
                 }
-            }
+            },
+            shape = RoundedCornerShape(28.dp)
         )
     }
 
-    // Диалог ошибки
     if (showErrorDialog) {
         AlertDialog(
             onDismissRequest = { showErrorDialog = false },
@@ -758,11 +673,13 @@ fun CheckoutScreen(
             confirmButton = {
                 Button(
                     onClick = { showErrorDialog = false },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("OK")
                 }
-            }
+            },
+            shape = RoundedCornerShape(28.dp)
         )
     }
 }
@@ -770,9 +687,8 @@ fun CheckoutScreen(
 @Composable
 fun CheckoutItemCard(cartItem: CartItem) {
     val dish = cartItem.dish
-    val currentQuantity = cartItem.quantity  // ← используем напрямую
+    val currentQuantity = cartItem.quantity
 
-    // Расчет цены с учетом скидки
     val discountPercentage = dish.discount?.toDoubleOrNull() ?: 0.0
     val originalPrice = dish.price.toDoubleOrNull() ?: 0.0
     val discountedPrice = if (discountPercentage > 0)
@@ -803,23 +719,23 @@ fun CheckoutItemCard(cartItem: CartItem) {
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    dish.name,
+                    text = dish.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     maxLines = 1
                 )
-
                 Text(
-                    "${"%.0f".format(discountedPrice)} тг × $currentQuantity",
+                    text = "${"%.0f".format(discountedPrice)} тг × $currentQuantity",
                     fontSize = 14.sp,
                     color = Color.Gray
                 )
             }
 
             Text(
-                "${"%.0f".format(discountedPrice * currentQuantity)} тг",
+                text = "${"%.0f".format(discountedPrice * currentQuantity)} тг",
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -831,7 +747,13 @@ enum class PaymentMethod(val displayName: String) {
     ONLINE("Онлайн-оплата")
 }
 
-// Вспомогательные функции форматирования
+data class CardInfo(
+    val id: String = "",
+    val last4: String = "",
+    val expiry: String = "",
+    val cardholderName: String = ""
+)
+
 private fun String.formatCardNumber(): String {
     val cleaned = this.filter { it.isDigit() }
     return cleaned.chunked(4).joinToString(" ")
@@ -845,8 +767,7 @@ private fun String.formatExpiryDate(): String {
     return cleaned
 }
 
-@Composable
-private fun getItemsText(count: Int): String {
+private fun getItemsWord(count: Int): String {
     return when {
         count % 10 == 1 && count % 100 != 11 -> "товар"
         count % 10 in 2..4 && count % 100 !in 12..14 -> "товара"

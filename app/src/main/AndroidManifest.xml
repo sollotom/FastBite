@@ -13,6 +13,12 @@
         android:theme="@style/Theme.FastBite"
         tools:targetApi="31">
         <activity
+            android:name=".AddReviewDialog"
+            android:exported="false" />
+        <activity
+            android:name=".ReviewManager"
+            android:exported="false" />
+        <activity
             android:name=".UserOrdersScreen"
             android:exported="false" />
         <activity

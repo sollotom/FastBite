@@ -37,34 +37,27 @@ object CartManager {
     private val db = Firebase.firestore
     private val auth = FirebaseAuth.getInstance()
 
-    // Для выполнения асинхронных операций
     private val ioScope = CoroutineScope(Dispatchers.IO)
 
-    // ID пользователя
     private val userId: String?
-        get() = auth.currentUser?.uid
+        get() = auth.currentUser?.email
 
-    // Инициализация загрузки корзины из Firebase
     init {
         loadCartFromFirebase()
     }
 
-    // Загрузить корзину из Firebase
     private fun loadCartFromFirebase() {
         userId?.let { uid ->
             db.collection("carts").document(uid)
                 .collection("items")
                 .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        return@addSnapshotListener
-                    }
+                    if (error != null) return@addSnapshotListener
 
                     snapshot?.let { querySnapshot ->
                         val items = mutableListOf<CartItem>()
                         for (document in querySnapshot.documents) {
                             val firestoreItem = document.toObject(FirestoreCartItem::class.java)
                             firestoreItem?.let { item ->
-                                // Создаем объект Dish на основе данных из Firestore
                                 val dish = Dish(
                                     id = item.dishId,
                                     name = item.name,
@@ -76,7 +69,6 @@ object CartManager {
                                 items.add(CartItem(dish, item.quantity, item.addedAt))
                             }
                         }
-                        // Обновляем локальную корзину
                         _cartItems.clear()
                         _cartItems.addAll(items.sortedBy { it.addedAt })
                     }
@@ -84,7 +76,6 @@ object CartManager {
         }
     }
 
-    // Сохранить элемент корзины в Firebase
     private suspend fun saveCartItemToFirebase(dish: Dish, quantity: Int) {
         val uid = userId ?: return
 
@@ -105,10 +96,8 @@ object CartManager {
             .await()
     }
 
-    // Удалить элемент корзины из Firebase
     private suspend fun removeCartItemFromFirebase(dishId: String) {
         val uid = userId ?: return
-
         db.collection("carts").document(uid)
             .collection("items")
             .document(dishId)
@@ -116,10 +105,8 @@ object CartManager {
             .await()
     }
 
-    // Обновить количество в Firebase
     private suspend fun updateQuantityInFirebase(dishId: String, quantity: Int) {
         val uid = userId ?: return
-
         db.collection("carts").document(uid)
             .collection("items")
             .document(dishId)
@@ -127,10 +114,8 @@ object CartManager {
             .await()
     }
 
-    // Очистить корзину в Firebase
     private suspend fun clearCartInFirebase() {
         val uid = userId ?: return
-
         val snapshot = db.collection("carts").document(uid)
             .collection("items")
             .get()
@@ -141,7 +126,6 @@ object CartManager {
         }
     }
 
-    // Добавить блюдо в корзину
     fun addToCart(dish: Dish) {
         val existingItem = _cartItems.find { it.dish.id == dish.id }
         if (existingItem != null) {
@@ -149,23 +133,19 @@ object CartManager {
         } else {
             val newItem = CartItem(dish)
             _cartItems.add(newItem)
-
             ioScope.launch {
                 saveCartItemToFirebase(dish, 1)
             }
         }
     }
 
-    // Удалить блюдо из корзины
     fun removeFromCart(dishId: String) {
         _cartItems.removeAll { it.dish.id == dishId }
-
         ioScope.launch {
             removeCartItemFromFirebase(dishId)
         }
     }
 
-    // Обновить количество
     fun updateQuantity(dishId: String, quantity: Int) {
         val item = _cartItems.find { it.dish.id == dishId }
         if (item != null) {
@@ -180,7 +160,6 @@ object CartManager {
         }
     }
 
-    // Увеличить количество на 1
     fun incrementQuantity(dishId: String) {
         val item = _cartItems.find { it.dish.id == dishId }
         item?.let {
@@ -191,7 +170,6 @@ object CartManager {
         }
     }
 
-    // Уменьшить количество на 1
     fun decrementQuantity(dishId: String) {
         val item = _cartItems.find { it.dish.id == dishId }
         item?.let {
@@ -206,12 +184,6 @@ object CartManager {
         }
     }
 
-    // Алиас для decrementQuantity (для обратной совместимости)
-    fun decreaseQuantity(dishId: String) {
-        decrementQuantity(dishId)
-    }
-
-    // Очистить корзину
     fun clearCart() {
         _cartItems.clear()
         ioScope.launch {
@@ -219,7 +191,6 @@ object CartManager {
         }
     }
 
-    // Получить общую сумму
     fun getTotalPrice(): Double {
         return _cartItems.sumOf { item ->
             val discountPercentage = item.dish.discount?.toDoubleOrNull() ?: 0.0
@@ -231,41 +202,28 @@ object CartManager {
         }
     }
 
-    // Получить общее количество товаров
     fun getTotalItems(): Int {
         return _cartItems.sumOf { it.quantity }
     }
 
-    // Получить размер корзины (количество уникальных товаров)
     fun getCartSize(): Int {
         return _cartItems.size
     }
 
-    // Получить количество конкретного товара
     fun getItemQuantity(dishId: String): Int {
         return _cartItems.find { it.dish.id == dishId }?.quantity ?: 0
     }
 
-    // Проверить, есть ли блюдо в корзине
     fun isInCart(dishId: String): Boolean {
         return _cartItems.any { it.dish.id == dishId }
     }
-
-    // Получить все элементы корзины
-    fun getCartItems(): List<CartItem> {
-        return _cartItems.toList()
-    }
 }
 
-// Composable функция для наблюдения за количеством товара
 @Composable
 fun rememberCartItemQuantity(dishId: String): Int {
     var quantity by remember { mutableStateOf(CartManager.getItemQuantity(dishId)) }
-
-    // Обновляем при изменении корзины (простой способ - перечитывать при рекомпозиции)
     LaunchedEffect(dishId, CartManager.getCartSize()) {
         quantity = CartManager.getItemQuantity(dishId)
     }
-
     return quantity
 }

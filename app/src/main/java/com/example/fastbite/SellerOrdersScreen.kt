@@ -3,7 +3,9 @@ package com.example.fastbite
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -47,6 +49,27 @@ fun SellerOrdersScreen() {
 
                 orders = snapshot?.documents?.mapNotNull { doc ->
                     try {
+                        val itemsList = mutableListOf<OrderItem>()
+                        val itemsField = doc.get("items")
+                        when (itemsField) {
+                            is List<*> -> {
+                                itemsField.forEach { item ->
+                                    if (item is Map<*, *>) {
+                                        itemsList.add(
+                                            OrderItem(
+                                                dishId = item["dishId"] as? String ?: "",
+                                                dishName = item["dishName"] as? String ?: "",
+                                                quantity = (item["quantity"] as? Long)?.toInt() ?: 1,
+                                                price = (item["price"] as? Double) ?: 0.0,
+                                                totalPrice = (item["totalPrice"] as? Double) ?: 0.0,
+                                                photoUrl = item["photoUrl"] as? String ?: ""
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         Order(
                             id = doc.id,
                             userId = doc.getString("userId") ?: "",
@@ -55,22 +78,11 @@ fun SellerOrdersScreen() {
                             userAddress = doc.getString("userAddress") ?: "",
                             restaurantId = doc.getString("restaurantId") ?: "",
                             restaurantName = doc.getString("restaurantName") ?: "",
-                            items = (doc.get("items") as? List<Map<String, Any>>)?.map { item ->
-                                OrderItem(
-                                    dishId = item["dishId"] as? String ?: "",
-                                    dishName = item["dishName"] as? String ?: "",
-                                    quantity = (item["quantity"] as? Long)?.toInt() ?: 1,
-                                    price = (item["price"] as? Double) ?: 0.0,
-                                    totalPrice = (item["totalPrice"] as? Double) ?: 0.0,
-                                    photoUrl = item["photoUrl"] as? String ?: ""
-                                )
-                            } ?: emptyList(),
+                            items = itemsList,
                             totalAmount = doc.getDouble("totalAmount") ?: 0.0,
-                            status = OrderStatus.values().find {
-                                it.name == doc.getString("status")
-                            } ?: OrderStatus.PENDING,
-                            createdAt = (doc.getTimestamp("createdAt")?.toDate() ?: Date()),
-                            updatedAt = (doc.getTimestamp("updatedAt")?.toDate() ?: Date()),
+                            status = OrderStatus.values().find { it.name == doc.getString("status") } ?: OrderStatus.PENDING,
+                            createdAt = doc.getTimestamp("createdAt")?.toDate() ?: Date(),
+                            updatedAt = doc.getTimestamp("updatedAt")?.toDate() ?: Date(),
                             deliveryAddress = DeliveryAddress(
                                 address = doc.getString("deliveryAddress.address") ?: "",
                                 apartment = doc.getString("deliveryAddress.apartment") ?: "",
@@ -90,11 +102,7 @@ fun SellerOrdersScreen() {
     }
 
     // Фильтруем заказы по статусу
-    val filteredOrders = if (selectedStatus == null) {
-        orders
-    } else {
-        orders.filter { it.status == selectedStatus }
-    }
+    val filteredOrders = if (selectedStatus == null) orders else orders.filter { it.status == selectedStatus }
 
     // Группируем заказы по дате
     val ordersByDate = filteredOrders.groupBy { order ->
@@ -104,7 +112,10 @@ fun SellerOrdersScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Заказы ресторана", fontWeight = FontWeight.Bold) }
+                title = { Text("Заказы ресторана", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         }
     ) { paddingValues ->
@@ -147,40 +158,21 @@ fun SellerOrdersScreen() {
             }
 
             if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             } else if (orders.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            Icons.Default.ShoppingCart,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = Color.Gray
-                        )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.ShoppingCart, null, modifier = Modifier.size(64.dp), tint = Color.Gray)
                         Spacer(Modifier.height(16.dp))
-                        Text(
-                            "Нет заказов",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Gray
-                        )
+                        Text("Нет заказов", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                        Text("Когда появятся новые заказы, они отобразятся здесь", fontSize = 14.sp, color = Color.Gray)
                     }
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     ordersByDate.forEach { (date, dateOrders) ->
@@ -192,26 +184,19 @@ fun SellerOrdersScreen() {
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
                         }
-
                         items(dateOrders) { order ->
-                            OrderCard(
-                                order = order,
-                                onClick = { selectedOrder = order }
-                            )
+                            SellerOrderCard(order = order, onClick = { selectedOrder = order })
                         }
                     }
-
-                    item {
-                        Spacer(Modifier.height(80.dp))
-                    }
+                    item { Spacer(Modifier.height(80.dp)) }
                 }
             }
         }
     }
 
-    // Детали заказа
+    // Диалог деталей заказа
     selectedOrder?.let { order ->
-        OrderDetailsDialog(
+        SellerOrderDetailsDialog(
             order = order,
             onDismiss = { selectedOrder = null },
             onStatusChange = { newStatus ->
@@ -223,10 +208,7 @@ fun SellerOrdersScreen() {
 }
 
 @Composable
-fun OrderCard(
-    order: Order,
-    onClick: () -> Unit
-) {
+fun SellerOrderCard(order: Order, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -250,42 +232,32 @@ fun OrderCard(
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
-                SellerStatusChip(status = order.status)  // ИСПРАВЛЕНО: теперь SellerStatusChip
+                OrderStatusChip(status = order.status)
             }
 
-            Text(
-                "Клиент: ${order.userName}",
-                fontSize = 14.sp
-            )
-
-            Text(
-                "Телефон: ${order.userPhone}",
-                fontSize = 14.sp
-            )
-
-            Text(
-                "Адрес: ${order.deliveryAddress.address}",
-                fontSize = 14.sp,
-                maxLines = 1
-            )
+            Text("Клиент: ${order.userName}", fontSize = 14.sp)
+            Text("Телефон: ${order.userPhone}", fontSize = 14.sp)
+            Text("Адрес: ${order.deliveryAddress.address}", fontSize = 14.sp, maxLines = 1)
 
             Divider()
 
-            order.items.forEach { item ->
+            // Показываем первые 2 блюда
+            order.items.take(2).forEach { item ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        "${item.dishName} x${item.quantity}",
-                        fontSize = 14.sp
-                    )
-                    Text(
-                        "${"%.0f".format(item.totalPrice)} тг",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Text("${item.dishName} x${item.quantity}", fontSize = 14.sp)
+                    Text("${"%.0f".format(item.totalPrice)} тг", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                 }
+            }
+
+            if (order.items.size > 2) {
+                Text(
+                    "+ еще ${order.items.size - 2} ${getItemsWord(order.items.size - 2)}",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
             }
 
             Divider()
@@ -294,11 +266,7 @@ fun OrderCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    "Итого:",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
+                Text("Итого:", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(
                     "${"%.0f".format(order.totalAmount)} тг",
                     fontWeight = FontWeight.Bold,
@@ -308,7 +276,7 @@ fun OrderCard(
             }
 
             Text(
-                "Время заказа: ${SimpleDateFormat("HH:mm", Locale("ru")).format(order.createdAt)}",
+                "Время: ${SimpleDateFormat("HH:mm", Locale("ru")).format(order.createdAt)}",
                 fontSize = 12.sp,
                 color = Color.Gray
             )
@@ -316,27 +284,16 @@ fun OrderCard(
     }
 }
 
-// ПЕРЕИМЕНОВАННАЯ ФУНКЦИЯ - теперь SellerStatusChip
 @Composable
-fun SellerStatusChip(status: OrderStatus) {
-    val (backgroundColor, textColor) = when (status) {
-        OrderStatus.PENDING -> Color(0xFFFFA000) to Color.White
-        OrderStatus.CONFIRMED -> Color(0xFF2196F3) to Color.White
-        OrderStatus.PREPARING -> Color(0xFFFF9800) to Color.White
-        OrderStatus.READY_FOR_PICKUP -> Color(0xFF4CAF50) to Color.White
-        OrderStatus.DELIVERING -> Color(0xFF9C27B0) to Color.White
-        OrderStatus.DELIVERED -> Color(0xFF4CAF50) to Color.White
-        OrderStatus.CANCELLED -> Color(0xFFF44336) to Color.White
-    }
-
+fun OrderStatusChip(status: OrderStatus) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = backgroundColor,
+        color = Color(status.color),
         modifier = Modifier.wrapContentSize()
     ) {
         Text(
             status.displayName,
-            color = textColor,
+            color = Color.White,
             fontSize = 12.sp,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
@@ -344,7 +301,7 @@ fun SellerStatusChip(status: OrderStatus) {
 }
 
 @Composable
-fun OrderDetailsDialog(
+fun SellerOrderDetailsDialog(
     order: Order,
     onDismiss: () -> Unit,
     onStatusChange: (OrderStatus) -> Unit
@@ -362,6 +319,7 @@ fun OrderDetailsDialog(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Заголовок
                 Text(
                     "Детали заказа #${order.id.takeLast(6)}",
                     fontWeight = FontWeight.Bold,
@@ -371,50 +329,37 @@ fun OrderDetailsDialog(
                 Divider()
 
                 // Информация о клиенте
-                Text(
-                    "Клиент",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
+                Text("Клиент", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text("Имя: ${order.userName}")
                 Text("Телефон: ${order.userPhone}")
+                Text("Email: ${order.userId}")
 
                 // Адрес доставки
-                Text(
-                    "Адрес доставки",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+                Text("Адрес доставки", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
                 Text(order.deliveryAddress.address)
+
                 val addressDetails = listOfNotNull(
                     order.deliveryAddress.apartment.takeIf { it.isNotBlank() }?.let { "Кв. $it" },
                     order.deliveryAddress.entrance.takeIf { it.isNotBlank() }?.let { "Подъезд $it" },
                     order.deliveryAddress.floor.takeIf { it.isNotBlank() }?.let { "Этаж $it" },
                     order.deliveryAddress.intercom.takeIf { it.isNotBlank() }?.let { "Домофон $it" }
                 ).joinToString(", ")
+
                 if (addressDetails.isNotBlank()) {
                     Text(addressDetails, fontSize = 14.sp, color = Color.Gray)
                 }
 
+                // Способ оплаты
+                Text("Оплата: ${order.paymentMethod}", fontSize = 14.sp)
+
                 // Комментарий
                 if (order.comment.isNotBlank()) {
-                    Text(
-                        "Комментарий",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    Text(order.comment)
+                    Text("Комментарий", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
+                    Text(order.comment, fontSize = 14.sp)
                 }
 
-                // Товары
-                Text(
-                    "Состав заказа",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+                // Состав заказа
+                Text("Состав заказа", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
 
                 order.items.forEach { item ->
                     Row(
@@ -432,11 +377,7 @@ fun OrderDetailsDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        "Итого:",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
+                    Text("Итого:", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Text(
                         "${"%.0f".format(order.totalAmount)} тг",
                         fontWeight = FontWeight.Bold,
@@ -446,30 +387,18 @@ fun OrderDetailsDialog(
                 }
 
                 // Изменение статуса
-                Text(
-                    "Изменить статус",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+                Text("Изменить статус", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
 
-                val availableStatuses = listOf(
-                    OrderStatus.PENDING,
-                    OrderStatus.CONFIRMED,
-                    OrderStatus.PREPARING,
-                    OrderStatus.READY_FOR_PICKUP,
-                    OrderStatus.DELIVERING,
-                    OrderStatus.DELIVERED,
-                    OrderStatus.CANCELLED
-                )
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                // Горизонтальная прокрутка для статусов
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    availableStatuses.forEach { status ->
+                    OrderStatus.values().forEach { status ->
                         Button(
                             onClick = { onStatusChange(status) },
-                            modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (status == order.status)
                                     MaterialTheme.colorScheme.primary
@@ -477,17 +406,17 @@ fun OrderDetailsDialog(
                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                             )
                         ) {
-                            Text(status.displayName)
+                            Text(status.displayName, fontSize = 12.sp)
                         }
                     }
                 }
 
+                Spacer(Modifier.height(8.dp))
+
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Gray
-                    )
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
                 ) {
                     Text("Закрыть")
                 }
@@ -508,4 +437,12 @@ private fun updateOrderStatus(
                 "updatedAt" to com.google.firebase.Timestamp.now()
             )
         )
+}
+
+private fun getItemsWord(count: Int): String {
+    return when {
+        count % 10 == 1 && count % 100 != 11 -> "блюдо"
+        count % 10 in 2..4 && count % 100 !in 12..14 -> "блюда"
+        else -> "блюд"
+    }
 }

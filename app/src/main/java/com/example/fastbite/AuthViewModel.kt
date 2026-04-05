@@ -7,35 +7,22 @@ import kotlinx.coroutines.flow.asStateFlow
 class AuthViewModel : ViewModel() {
     private val _email = MutableStateFlow("")
     private val _password = MutableStateFlow("")
+    private val _userName = MutableStateFlow("")
+    private val _isSeller = MutableStateFlow(false)
     private val _message = MutableStateFlow("")
+    private val _isLoading = MutableStateFlow(false)
 
     val email = _email.asStateFlow()
     val password = _password.asStateFlow()
+    val userName = _userName.asStateFlow()
+    val isSeller = _isSeller.asStateFlow()
     val message = _message.asStateFlow()
+    val isLoading = _isLoading.asStateFlow()
 
-    fun updateEmail(value: String) {
-        _email.value = value
-    }
+    fun updateEmail(value: String) { _email.value = value }
+    fun updatePassword(value: String) { _password.value = value }
+    fun updateUserName(value: String) { _userName.value = value }
+    fun updateIsSeller(value: Boolean) { _isSeller.value = value }
 
-    fun updatePassword(value: String) {
-        _password.value = value
-    }
-
-    fun register() {
-        if (_email.value.isBlank() || _password.value.isBlank()) {
-            _message.value = "Введите email и пароль"
-            return
-        }
-        _message.value = "Регистрация успешна!"
-        // Здесь можно добавить сохранение данных (Firebase / сервер Node.js)
-    }
-
-    fun login() {
-        if (_email.value.isBlank() || _password.value.isBlank()) {
-            _message.value = "Введите email и пароль"
-            return
-        }
-        // Здесь можно добавить проверку логина (Firebase / API)
-        _message.value = "Вход выполнен успешно!"
-    }
+    fun clearMessage() { _message.value = "" }
 }

@@ -2,37 +2,34 @@ package com.example.fastbite
 
 import java.util.Date
 
-// Модель заказа
 data class Order(
     val id: String = "",
-    val userId: String = "",           // Email покупателя
-    val userName: String = "",          // Имя покупателя
-    val userPhone: String = "",         // Телефон покупателя
-    val userAddress: String = "",       // Адрес доставки
-    val restaurantId: String = "",      // Email ресторана
-    val restaurantName: String = "",    // Название ресторана
-    val items: List<OrderItem> = emptyList(), // Товары в заказе
-    val totalAmount: Double = 0.0,      // Общая сумма
-    val status: OrderStatus = OrderStatus.PENDING, // Статус заказа
-    val createdAt: Date = Date(),       // Дата создания
-    val updatedAt: Date = Date(),       // Дата обновления
-    val deliveryAddress: DeliveryAddress = DeliveryAddress(), // Адрес доставки
-    val paymentMethod: String = "Наличными", // Способ оплаты
-    val comment: String = ""            // Комментарий к заказу
+    val userId: String = "",
+    val userName: String = "",
+    val userPhone: String = "",
+    val userAddress: String = "",
+    val restaurantId: String = "",
+    val restaurantName: String = "",
+    val items: List<OrderItem> = emptyList(),
+    val totalAmount: Double = 0.0,
+    val status: OrderStatus = OrderStatus.PENDING,
+    val createdAt: Date = Date(),
+    val updatedAt: Date = Date(),
+    val deliveryAddress: DeliveryAddress = DeliveryAddress(),
+    val paymentMethod: String = "Наличными",
+    val comment: String = ""
 )
 
-// Статусы заказа
-enum class OrderStatus(val displayName: String) {
-    PENDING("Ожидает подтверждения"),
-    CONFIRMED("Подтвержден"),
-    PREPARING("Готовится"),
-    READY_FOR_PICKUP("Готов к выдаче"),
-    DELIVERING("Доставляется"),
-    DELIVERED("Доставлен"),
-    CANCELLED("Отменен")
+enum class OrderStatus(val displayName: String, val color: Long) {
+    PENDING("Ожидает подтверждения", 0xFFFFA000),
+    CONFIRMED("Подтвержден", 0xFF2196F3),
+    PREPARING("Готовится", 0xFFFF9800),
+    READY_FOR_PICKUP("Готов к выдаче", 0xFF4CAF50),
+    DELIVERING("Доставляется", 0xFF9C27B0),
+    DELIVERED("Доставлен", 0xFF4CAF50),
+    CANCELLED("Отменен", 0xFFF44336)
 }
 
-// Элемент заказа
 data class OrderItem(
     val dishId: String = "",
     val dishName: String = "",
@@ -42,11 +39,20 @@ data class OrderItem(
     val photoUrl: String = ""
 )
 
-// Адрес доставки
 data class DeliveryAddress(
     val address: String = "",
     val apartment: String = "",
     val entrance: String = "",
     val floor: String = "",
     val intercom: String = ""
+)
+
+data class Address(
+    val id: String = "",
+    val address: String = "",
+    val apartment: String = "",
+    val entrance: String = "",
+    val floor: String = "",
+    val intercom: String = "",
+    val isDefault: Boolean = false
 )
