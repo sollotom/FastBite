@@ -204,7 +204,9 @@ fun OrderCard(
     var expanded by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded }, // ← Перенести clickable на Card
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(
@@ -214,7 +216,6 @@ fun OrderCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = !expanded }
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -278,7 +279,9 @@ fun OrderCard(
 
                 order.items.forEach { item ->
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -373,7 +376,6 @@ fun OrderCard(
         }
     }
 }
-
 // Функция для отображения статуса заказа в виде цветного чипа (для пользователя)
 @Composable
 fun UserOrderStatusChip(status: OrderStatus) {

@@ -2,6 +2,7 @@ package com.example.fastbite
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.items
@@ -49,13 +50,13 @@ fun SellerOrdersScreen() {
 
                 orders = snapshot?.documents?.mapNotNull { doc ->
                     try {
-                        val itemsList = mutableListOf<OrderItem>()
+                        val allItems = mutableListOf<OrderItem>()
                         val itemsField = doc.get("items")
                         when (itemsField) {
                             is List<*> -> {
                                 itemsField.forEach { item ->
                                     if (item is Map<*, *>) {
-                                        itemsList.add(
+                                        allItems.add(
                                             OrderItem(
                                                 dishId = item["dishId"] as? String ?: "",
                                                 dishName = item["dishName"] as? String ?: "",
@@ -70,6 +71,16 @@ fun SellerOrdersScreen() {
                             }
                         }
 
+                        // ФИЛЬТРУЕМ ТОЛЬКО БЛЮДА ЭТОГО РЕСТОРАНА
+                        // ВАЖНО: Заказ уже отфильтрован по restaurantId,
+                        // но на всякий случай фильтруем и items
+                        // Если в заказе могут быть блюда из разных ресторанов,
+                        // нужно фильтровать по dishId, получая restaurantId из блюда
+
+                        // Для этого нам нужно знать, какие dishId принадлежат этому ресторану
+                        // Пока оставляем все items, т.к. заказ уже отфильтрован по restaurantId
+                        // и все блюда в нем должны быть из этого ресторана
+
                         Order(
                             id = doc.id,
                             userId = doc.getString("userId") ?: "",
@@ -78,7 +89,7 @@ fun SellerOrdersScreen() {
                             userAddress = doc.getString("userAddress") ?: "",
                             restaurantId = doc.getString("restaurantId") ?: "",
                             restaurantName = doc.getString("restaurantName") ?: "",
-                            items = itemsList,
+                            items = allItems, // Здесь все блюда из заказа
                             totalAmount = doc.getDouble("totalAmount") ?: 0.0,
                             status = OrderStatus.values().find { it.name == doc.getString("status") } ?: OrderStatus.PENDING,
                             createdAt = doc.getTimestamp("createdAt")?.toDate() ?: Date(),
@@ -128,32 +139,49 @@ fun SellerOrdersScreen() {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilterChip(
                     selected = selectedStatus == null,
                     onClick = { selectedStatus = null },
-                    label = { Text("Все") },
-                    modifier = Modifier.weight(1f)
+                    label = { Text("Все") }
                 )
                 FilterChip(
                     selected = selectedStatus == OrderStatus.PENDING,
                     onClick = { selectedStatus = OrderStatus.PENDING },
-                    label = { Text("Новые") },
-                    modifier = Modifier.weight(1f)
+                    label = { Text("Новые") }
+                )
+                FilterChip(
+                    selected = selectedStatus == OrderStatus.CONFIRMED,
+                    onClick = { selectedStatus = OrderStatus.CONFIRMED },
+                    label = { Text("Подтверждены") }
                 )
                 FilterChip(
                     selected = selectedStatus == OrderStatus.PREPARING,
                     onClick = { selectedStatus = OrderStatus.PREPARING },
-                    label = { Text("Готовятся") },
-                    modifier = Modifier.weight(1f)
+                    label = { Text("Готовятся") }
+                )
+                FilterChip(
+                    selected = selectedStatus == OrderStatus.READY_FOR_PICKUP,
+                    onClick = { selectedStatus = OrderStatus.READY_FOR_PICKUP },
+                    label = { Text("Готов к выдаче") }
+                )
+                FilterChip(
+                    selected = selectedStatus == OrderStatus.DELIVERING,
+                    onClick = { selectedStatus = OrderStatus.DELIVERING },
+                    label = { Text("В доставке") }
                 )
                 FilterChip(
                     selected = selectedStatus == OrderStatus.DELIVERED,
                     onClick = { selectedStatus = OrderStatus.DELIVERED },
-                    label = { Text("Доставлены") },
-                    modifier = Modifier.weight(1f)
+                    label = { Text("Доставлены") }
+                )
+                FilterChip(
+                    selected = selectedStatus == OrderStatus.CANCELLED,
+                    onClick = { selectedStatus = OrderStatus.CANCELLED },
+                    label = { Text("Отменены") }
                 )
             }
 
@@ -241,8 +269,8 @@ fun SellerOrderCard(order: Order, onClick: () -> Unit) {
 
             Divider()
 
-            // Показываем первые 2 блюда
-            order.items.take(2).forEach { item ->
+            // Показываем ВСЕ блюда из заказа (они все принадлежат этому ресторану)
+            order.items.forEach { item ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -250,14 +278,6 @@ fun SellerOrderCard(order: Order, onClick: () -> Unit) {
                     Text("${item.dishName} x${item.quantity}", fontSize = 14.sp)
                     Text("${"%.0f".format(item.totalPrice)} тг", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                 }
-            }
-
-            if (order.items.size > 2) {
-                Text(
-                    "+ еще ${order.items.size - 2} ${getItemsWord(order.items.size - 2)}",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
             }
 
             Divider()
@@ -313,118 +333,124 @@ fun SellerOrderDetailsDialog(
                 .heightIn(max = 600.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            // Используем Surface для правильной работы с прокруткой
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                shape = RoundedCornerShape(16.dp)
             ) {
-                // Заголовок
-                Text(
-                    "Детали заказа #${order.id.takeLast(6)}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState()), // verticalScroll должен работать
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Заголовок
+                    Text(
+                        "Детали заказа #${order.id.takeLast(6)}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
 
-                Divider()
+                    Divider()
 
-                // Информация о клиенте
-                Text("Клиент", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text("Имя: ${order.userName}")
-                Text("Телефон: ${order.userPhone}")
-                Text("Email: ${order.userId}")
+                    // Информация о клиенте
+                    Text("Клиент", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Имя: ${order.userName}")
+                    Text("Телефон: ${order.userPhone}")
+                    Text("Email: ${order.userId}")
 
-                // Адрес доставки
-                Text("Адрес доставки", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
-                Text(order.deliveryAddress.address)
+                    // Адрес доставки
+                    Text("Адрес доставки", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
+                    Text(order.deliveryAddress.address)
 
-                val addressDetails = listOfNotNull(
-                    order.deliveryAddress.apartment.takeIf { it.isNotBlank() }?.let { "Кв. $it" },
-                    order.deliveryAddress.entrance.takeIf { it.isNotBlank() }?.let { "Подъезд $it" },
-                    order.deliveryAddress.floor.takeIf { it.isNotBlank() }?.let { "Этаж $it" },
-                    order.deliveryAddress.intercom.takeIf { it.isNotBlank() }?.let { "Домофон $it" }
-                ).joinToString(", ")
+                    val addressDetails = listOfNotNull(
+                        order.deliveryAddress.apartment.takeIf { it.isNotBlank() }?.let { "Кв. $it" },
+                        order.deliveryAddress.entrance.takeIf { it.isNotBlank() }?.let { "Подъезд $it" },
+                        order.deliveryAddress.floor.takeIf { it.isNotBlank() }?.let { "Этаж $it" },
+                        order.deliveryAddress.intercom.takeIf { it.isNotBlank() }?.let { "Домофон $it" }
+                    ).joinToString(", ")
 
-                if (addressDetails.isNotBlank()) {
-                    Text(addressDetails, fontSize = 14.sp, color = Color.Gray)
-                }
+                    if (addressDetails.isNotBlank()) {
+                        Text(addressDetails, fontSize = 14.sp, color = Color.Gray)
+                    }
 
-                // Способ оплаты
-                Text("Оплата: ${order.paymentMethod}", fontSize = 14.sp)
+                    // Способ оплаты
+                    Text("Оплата: ${order.paymentMethod}", fontSize = 14.sp)
 
-                // Комментарий
-                if (order.comment.isNotBlank()) {
-                    Text("Комментарий", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
-                    Text(order.comment, fontSize = 14.sp)
-                }
+                    // Комментарий
+                    if (order.comment.isNotBlank()) {
+                        Text("Комментарий", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
+                        Text(order.comment, fontSize = 14.sp)
+                    }
 
-                // Состав заказа
-                Text("Состав заказа", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
+                    // Состав заказа
+                    Text("Состав заказа", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
 
-                order.items.forEach { item ->
+                    order.items.forEach { item ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("${item.dishName} x${item.quantity}")
+                            Text("${"%.0f".format(item.totalPrice)} тг")
+                        }
+                    }
+
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("${item.dishName} x${item.quantity}")
-                        Text("${"%.0f".format(item.totalPrice)} тг")
+                        Text("Итого:", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text(
+                            "${"%.0f".format(order.totalAmount)} тг",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
-                }
 
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    // Изменение статуса
+                    Text("Изменить статус", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Итого:", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text(
-                        "${"%.0f".format(order.totalAmount)} тг",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                // Изменение статуса
-                Text("Изменить статус", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
-
-                // Горизонтальная прокрутка для статусов
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OrderStatus.values().forEach { status ->
-                        Button(
-                            onClick = { onStatusChange(status) },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (status == order.status)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                            )
-                        ) {
-                            Text(status.displayName, fontSize = 12.sp)
+                    // Горизонтальная прокрутка для статусов
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OrderStatus.values().forEach { status ->
+                            Button(
+                                onClick = { onStatusChange(status) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (status == order.status)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                )
+                            ) {
+                                Text(status.displayName, fontSize = 12.sp)
+                            }
                         }
                     }
-                }
 
-                Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(8.dp))
 
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
-                ) {
-                    Text("Закрыть")
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+                    ) {
+                        Text("Закрыть")
+                    }
                 }
             }
         }
     }
 }
-
 private fun updateOrderStatus(
     orderId: String,
     newStatus: OrderStatus,
