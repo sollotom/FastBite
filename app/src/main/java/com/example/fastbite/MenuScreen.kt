@@ -663,14 +663,15 @@ fun EnhancedMenuDishCard(
     else originalPrice
     val avgRating = dish.ratingAverage ?: 0.0
     val cookingTime = dish.cookingTime.toIntOrNull() ?: 0
+    val calories = dish.calories.toIntOrNull() ?: 0
+    val quantity = rememberCartItemQuantity(dish.id)
 
     Card(
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(4.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .animateContentSize(),
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
@@ -714,14 +715,14 @@ fun EnhancedMenuDishCard(
                         color = Color(0xFFFF9800),
                         modifier = Modifier
                             .align(Alignment.TopStart)
-                            .padding(12.dp)
+                            .padding(8.dp)
                     ) {
                         Text(
                             "-${"%.0f".format(discountPercentage)}%",
-                            fontSize = 14.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                         )
                     }
                 }
@@ -733,55 +734,78 @@ fun EnhancedMenuDishCard(
                         color = Color(0xFFE91E63),
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(12.dp)
+                            .padding(8.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                Icons.Filled.Whatshot,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = Color.White
-                            )
-                            Text(
-                                "Популярное",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
-
-                // Бейдж вегетарианское
-                if (dish.vegetarian) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFF4CAF50),
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(12.dp)
-                    ) {
-                        Text(
-                            "🌱 Вегетарианское",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        Icon(
+                            Icons.Filled.Whatshot,
+                            contentDescription = "Популярное",
+                            modifier = Modifier
+                                .size(16.dp)
+                                .padding(4.dp),
+                            tint = Color.White
                         )
                     }
                 }
 
-                // Кнопка корзины
+                // Кнопка корзины - теперь в правом нижнем углу изображения
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(12.dp)
+                        .padding(8.dp)
                 ) {
                     EnhancedCartButton(dish = dish)
+                }
+
+                // Вес и калории - теперь на изображении слева внизу
+                if (dish.weightOrVolume.isNotBlank() || calories > 0) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        if (dish.weightOrVolume.isNotBlank()) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color.Black.copy(alpha = 0.6f),
+                                modifier = Modifier.wrapContentSize()
+                            ) {
+                                Text(
+                                    dish.weightOrVolume,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                        if (calories > 0) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color.Black.copy(alpha = 0.6f),
+                                modifier = Modifier.wrapContentSize()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.LocalFireDepartment,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(12.dp),
+                                        tint = Color.White
+                                    )
+                                    Text(
+                                        "$calories ккал",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -800,220 +824,7 @@ fun EnhancedMenuDishCard(
                     Text(
                         dish.name,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    if (avgRating > 0) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFFFC107).copy(alpha = 0.1f),
-                            modifier = Modifier.padding(start = 8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    Icons.Filled.Star,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(12.dp),
-                                    tint = Color(0xFFFFC107)
-                                )
-                                Text(
-                                    "%.1f".format(avgRating),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFFFFC107)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                // Краткое описание
-                if (dish.description.isNotBlank()) {
-                    Text(
-                        dish.description,
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(Modifier.height(8.dp))
-                }
-
-                // Характеристики
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (dish.weightOrVolume.isNotBlank()) {
-                        EnhancedInfoChip(
-                            text = dish.weightOrVolume,
-                            icon = Icons.Outlined.FitnessCenter,
-                            size = 10
-                        )
-                    }
-
-                    if (cookingTime > 0) {
-                        EnhancedInfoChip(
-                            text = "$cookingTime мин",
-                            icon = Icons.Outlined.Schedule,
-                            size = 10
-                        )
-                    }
-
-                    if (dish.calories.isNotBlank()) {
-                        val calories = dish.calories.toIntOrNull() ?: 0
-                        if (calories > 0) {
-                            EnhancedInfoChip(
-                                text = "$calories ккал",
-                                icon = Icons.Outlined.LocalFireDepartment,
-                                size = 10
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                // Цена и кнопка добавления
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        if (discountPercentage > 0) {
-                            Text(
-                                "${"%.0f".format(discountedPrice)} ₸",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Red
-                            )
-                            Text(
-                                "${"%.0f".format(originalPrice)} ₸",
-                                fontSize = 12.sp,
-                                color = Color.Gray,
-                                textDecoration = TextDecoration.LineThrough
-                            )
-                        } else {
-                            Text(
-                                "${"%.0f".format(originalPrice)} ₸",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-
-                    EnhancedAddButton(dish = dish)
-                }
-            }
-        }
-    }
-}
-
-// Улучшенная карточка блюда для списка
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun EnhancedListDishCard(
-    dish: Dish,
-    onClick: () -> Unit
-) {
-    val discountPercentage = dish.discount?.toDoubleOrNull() ?: 0.0
-    val originalPrice = dish.price.toDoubleOrNull() ?: 0.0
-    val discountedPrice = if (discountPercentage > 0)
-        originalPrice * (1 - discountPercentage / 100)
-    else originalPrice
-    val avgRating = dish.ratingAverage ?: 0.0
-    val cookingTime = dish.cookingTime.toIntOrNull() ?: 0
-
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(4.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .animateContentSize(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp)
-        ) {
-            // Изображение
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(RoundedCornerShape(16.dp))
-            ) {
-                AsyncImage(
-                    model = dish.photoUrl,
-                    contentDescription = dish.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-
-                if (discountPercentage > 0) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFFF9800),
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(4.dp)
-                    ) {
-                        Text(
-                            "-${"%.0f".format(discountPercentage)}%",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-
-                if (dish.vegetarian) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFF4CAF50),
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(4.dp)
-                    ) {
-                        Text(
-                            "🌱",
-                            fontSize = 10.sp,
-                            modifier = Modifier.padding(4.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.width(12.dp))
-
-            // Информация
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        dish.name,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
+                        fontSize = 15.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
@@ -1022,84 +833,61 @@ fun EnhancedListDishCard(
                     if (avgRating > 0) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Icon(
                                 Icons.Filled.Star,
                                 contentDescription = null,
-                                modifier = Modifier.size(14.dp),
+                                modifier = Modifier.size(12.dp),
                                 tint = Color(0xFFFFC107)
                             )
                             Text(
                                 "%.1f".format(avgRating),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFFFFC107)
                             )
                         }
                     }
                 }
 
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(6.dp))
 
+                // Краткое описание
                 if (dish.description.isNotBlank()) {
                     Text(
                         dish.description,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         color = Color.Gray,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 14.sp
                     )
                     Spacer(Modifier.height(8.dp))
                 }
 
-                // Характеристики
-                WrapColumn(
-                    horizontalSpacing = 8.dp,
-                    verticalSpacing = 4.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (dish.weightOrVolume.isNotBlank()) {
-                        EnhancedInfoChip(
-                            text = dish.weightOrVolume,
-                            icon = Icons.Outlined.FitnessCenter,
-                            size = 10
+                // Время приготовления
+                if (cookingTime > 0) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = Color.Gray
                         )
-                    }
-
-                    if (cookingTime > 0) {
-                        EnhancedInfoChip(
-                            text = "$cookingTime мин",
-                            icon = Icons.Outlined.Schedule,
-                            size = 10
+                        Text(
+                            "$cookingTime мин",
+                            fontSize = 11.sp,
+                            color = Color.Gray
                         )
-                    }
-
-                    if (dish.calories.isNotBlank()) {
-                        val calories = dish.calories.toIntOrNull() ?: 0
-                        if (calories > 0) {
-                            EnhancedInfoChip(
-                                text = "$calories ккал",
-                                icon = Icons.Outlined.LocalFireDepartment,
-                                size = 10
-                            )
-                        }
-                    }
-
-                    if (dish.spiciness.isNotBlank()) {
-                        val spicinessLevel = dish.spiciness.toIntOrNull() ?: 0
-                        if (spicinessLevel > 0) {
-                            EnhancedInfoChip(
-                                text = "🌶️ $spicinessLevel/5",
-                                icon = Icons.Outlined.LocalFireDepartment,
-                                size = 10
-                            )
-                        }
                     }
                 }
 
-                Spacer(Modifier.height(12.dp))
-
-                // Цена и кнопка добавления
+                // Цена и контролы количества
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1129,79 +917,343 @@ fun EnhancedListDishCard(
                         }
                     }
 
-                    EnhancedAddButton(dish = dish, size = 36)
+                    // Компактные контролы количества под ценой
+                    if (quantity > 0) {
+                        CompactQuantityControls(
+                            dish = dish,
+                            quantity = quantity,
+                            modifier = Modifier.wrapContentSize()
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-// Улучшенная кнопка добавления в корзину
+// Компактные контролы количества
 @Composable
-fun EnhancedAddButton(
+fun CompactQuantityControls(
     dish: Dish,
-    size: Int = 40,
+    quantity: Int,
     modifier: Modifier = Modifier
 ) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier
+                .height(32.dp)
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            IconButton(
+                onClick = {
+                    CartManager.decrementQuantity(dish.id)
+                },
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    Icons.Default.Remove,
+                    contentDescription = "Уменьшить",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Text(
+                quantity.toString(),
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                modifier = Modifier.width(20.dp),
+                textAlign = TextAlign.Center
+            )
+
+            IconButton(
+                onClick = {
+                    CartManager.incrementQuantity(dish.id)
+                },
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Увеличить",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
+// Улучшенная карточка блюда для списка
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EnhancedListDishCard(
+    dish: Dish,
+    onClick: () -> Unit
+) {
+    val discountPercentage = dish.discount?.toDoubleOrNull() ?: 0.0
+    val originalPrice = dish.price.toDoubleOrNull() ?: 0.0
+    val discountedPrice = if (discountPercentage > 0)
+        originalPrice * (1 - discountPercentage / 100)
+    else originalPrice
+    val avgRating = dish.ratingAverage ?: 0.0
+    val cookingTime = dish.cookingTime.toIntOrNull() ?: 0
+    val calories = dish.calories.toIntOrNull() ?: 0
     val quantity = rememberCartItemQuantity(dish.id)
 
-    if (quantity == 0) {
-        FloatingActionButton(
-            onClick = { CartManager.addToCart(dish) },
-            modifier = modifier.size(size.dp),
-            containerColor = MaterialTheme.colorScheme.primary,
-            shape = CircleShape,
-            elevation = FloatingActionButtonDefaults.elevation(4.dp)
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
         ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = "Добавить",
-                modifier = Modifier.size((size * 0.6).dp)
-            )
-        }
-    } else {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.primary,
-            shadowElevation = 4.dp,
-            modifier = modifier
-        ) {
-            Row(
+            // Изображение
+            Box(
                 modifier = Modifier
-                    .height(size.dp)
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .size(110.dp)
+                    .clip(RoundedCornerShape(16.dp))
             ) {
-                IconButton(
-                    onClick = { CartManager.decrementQuantity(dish.id) },
-                    modifier = Modifier.size((size * 0.6).dp)
-                ) {
-                    Icon(
-                        Icons.Default.Remove,
-                        contentDescription = "Уменьшить",
-                        modifier = Modifier.size((size * 0.4).dp),
-                        tint = Color.White
-                    )
-                }
-
-                Text(
-                    quantity.toString(),
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = (size * 0.4).sp
+                AsyncImage(
+                    model = dish.photoUrl,
+                    contentDescription = dish.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
 
-                IconButton(
-                    onClick = { CartManager.incrementQuantity(dish.id) },
-                    modifier = Modifier.size((size * 0.6).dp)
+                if (discountPercentage > 0) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFFF9800),
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(6.dp)
+                    ) {
+                        Text(
+                            "-${"%.0f".format(discountPercentage)}%",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+
+                if (dish.vegetarian) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFF4CAF50),
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(6.dp)
+                    ) {
+                        Text(
+                            "🌱",
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(4.dp)
+                        )
+                    }
+                }
+
+                // Вес и калории на изображении
+                if (dish.weightOrVolume.isNotBlank() || calories > 0) {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        if (dish.weightOrVolume.isNotBlank()) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color.Black.copy(alpha = 0.6f),
+                                modifier = Modifier.wrapContentSize()
+                            ) {
+                                Text(
+                                    dish.weightOrVolume,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                        if (calories > 0) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color.Black.copy(alpha = 0.6f),
+                                modifier = Modifier.wrapContentSize()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.LocalFireDepartment,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(10.dp),
+                                        tint = Color.White
+                                    )
+                                    Text(
+                                        "$calories",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.width(12.dp))
+
+            // Информация
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Увеличить",
-                        modifier = Modifier.size((size * 0.4).dp),
-                        tint = Color.White
+                    Text(
+                        dish.name,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
+
+                    if (avgRating > 0) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = Color(0xFFFFC107)
+                            )
+                            Text(
+                                "%.1f".format(avgRating),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                if (dish.description.isNotBlank()) {
+                    Text(
+                        dish.description,
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 16.sp
+                    )
+                    Spacer(Modifier.height(6.dp))
+                }
+
+                // Время приготовления
+                if (cookingTime > 0) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = Color.Gray
+                        )
+                        Text(
+                            "$cookingTime мин",
+                            fontSize = 11.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+
+                // Цена и контролы
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        if (discountPercentage > 0) {
+                            Text(
+                                "${"%.0f".format(discountedPrice)} ₸",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Red
+                            )
+                            Text(
+                                "${"%.0f".format(originalPrice)} ₸",
+                                fontSize = 11.sp,
+                                color = Color.Gray,
+                                textDecoration = TextDecoration.LineThrough
+                            )
+                        } else {
+                            Text(
+                                "${"%.0f".format(originalPrice)} ₸",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    // Контролы количества
+                    if (quantity > 0) {
+                        CompactQuantityControls(
+                            dish = dish,
+                            quantity = quantity,
+                            modifier = Modifier.wrapContentSize()
+                        )
+                    } else {
+                        // Кнопка добавления
+                        IconButton(
+                            onClick = { CartManager.addToCart(dish) },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Добавить",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1217,20 +1269,26 @@ fun EnhancedCartButton(dish: Dish, modifier: Modifier = Modifier) {
         modifier = modifier,
         shape = CircleShape,
         color = MaterialTheme.colorScheme.primary,
-        shadowElevation = if (quantity > 0) 8.dp else 4.dp
+        shadowElevation = 4.dp
     ) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .size(44.dp)
-                .clickable { CartManager.addToCart(dish) }
+                .clickable {
+                    if (quantity > 0) {
+                        CartManager.incrementQuantity(dish.id)
+                    } else {
+                        CartManager.addToCart(dish)
+                    }
+                }
         ) {
             if (quantity > 0) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .offset(x = 4.dp, y = (-4).dp)
-                        .size(20.dp)
+                        .size(22.dp)
                         .background(
                             color = Color.Red,
                             shape = CircleShape
@@ -1240,7 +1298,7 @@ fun EnhancedCartButton(dish: Dish, modifier: Modifier = Modifier) {
                     Text(
                         if (quantity > 99) "99+" else quantity.toString(),
                         color = Color.White,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -1313,6 +1371,7 @@ fun EnhancedDishDetailsSheet(
     val fats = dish.fats.toDoubleOrNull() ?: 0.0
     val carbs = dish.carbs.toDoubleOrNull() ?: 0.0
     val spicinessLevel = dish.spiciness.toIntOrNull() ?: 0
+    val quantity = rememberCartItemQuantity(dish.id)
 
     // Загрузка информации о ресторане
     var restaurantName by remember { mutableStateOf("") }
@@ -1449,6 +1508,58 @@ fun EnhancedDishDetailsSheet(
                             fontWeight = FontWeight.Medium,
                             color = Color.White
                         )
+                    }
+                }
+            }
+
+            // Вес и калории на изображении
+            if (dish.weightOrVolume.isNotBlank() || calories > 0) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (dish.weightOrVolume.isNotBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color.Black.copy(alpha = 0.6f),
+                            modifier = Modifier.wrapContentSize()
+                        ) {
+                            Text(
+                                "⚖️ ${dish.weightOrVolume}",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                    if (calories > 0) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color.Black.copy(alpha = 0.6f),
+                            modifier = Modifier.wrapContentSize()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    Icons.Outlined.LocalFireDepartment,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = Color.White
+                                )
+                                Text(
+                                    "$calories ккал",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.White
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1797,136 +1908,7 @@ fun EnhancedDishDetailsSheet(
                 }
                 Spacer(Modifier.height(16.dp))
             }
-            // Улучшенные контролы корзины
-            @Composable
-            fun EnhancedCartControls(dish: Dish, modifier: Modifier = Modifier) {
-                val quantity = rememberCartItemQuantity(dish.id)
-                val discountPercentage = dish.discount?.toDoubleOrNull() ?: 0.0
-                val originalPrice = dish.price.toDoubleOrNull() ?: 0.0
-                val discountedPrice = if (discountPercentage > 0)
-                    originalPrice * (1 - discountPercentage / 100)
-                else originalPrice
 
-                Card(
-                    modifier = modifier,
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    if (quantity == 0) {
-                        Button(
-                            onClick = { CartManager.addToCart(dish) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Icon(
-                                Icons.Default.AddShoppingCart,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                "Добавить в корзину",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    } else {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
-                            Text(
-                                "В вашей корзине",
-                                fontSize = 14.sp,
-                                color = Color.Gray
-                            )
-
-                            Spacer(Modifier.height(12.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    IconButton(
-                                        onClick = { CartManager.decrementQuantity(dish.id) },
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .background(
-                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                                CircleShape
-                                            )
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Remove,
-                                            contentDescription = "Уменьшить",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            quantity.toString(),
-                                            fontSize = 28.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Text(
-                                            "шт.",
-                                            fontSize = 12.sp,
-                                            color = Color.Gray
-                                        )
-                                    }
-
-                                    IconButton(
-                                        onClick = { CartManager.incrementQuantity(dish.id) },
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .background(
-                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                                CircleShape
-                                            )
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Add,
-                                            contentDescription = "Увеличить",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-                                }
-
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text(
-                                        "Итого",
-                                        fontSize = 12.sp,
-                                        color = Color.Gray
-                                    )
-                                    Text(
-                                        "${"%.0f".format(discountedPrice * quantity)} ₸",
-                                        fontSize = 20.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
             // Информация о ресторане
             if (restaurantName.isNotBlank()) {
                 Card(
@@ -2073,15 +2055,131 @@ fun EnhancedDishDetailsSheet(
                 Spacer(Modifier.height(16.dp))
             }
 
-            // Кнопки управления корзиной
-            EnhancedCartControls(dish = dish, modifier = Modifier.fillMaxWidth())
+            // Улучшенные контролы корзины
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                if (quantity == 0) {
+                    Button(
+                        onClick = { CartManager.addToCart(dish) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(
+                            Icons.Default.AddShoppingCart,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Добавить в корзину",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            "В вашей корзине",
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+
+                        Spacer(Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                IconButton(
+                                    onClick = { CartManager.decrementQuantity(dish.id) },
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                            CircleShape
+                                        )
+                                ) {
+                                    Icon(
+                                        Icons.Default.Remove,
+                                        contentDescription = "Уменьшить",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        quantity.toString(),
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        "шт.",
+                                        fontSize = 12.sp,
+                                        color = Color.Gray
+                                    )
+                                }
+
+                                IconButton(
+                                    onClick = { CartManager.incrementQuantity(dish.id) },
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                            CircleShape
+                                        )
+                                ) {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = "Увеличить",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    "Итого",
+                                    fontSize = 12.sp,
+                                    color = Color.Gray
+                                )
+                                Text(
+                                    "${"%.0f".format(discountedPrice * quantity)} ₸",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
             Spacer(Modifier.height(32.dp))
         }
     }
 }
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

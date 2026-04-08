@@ -7,9 +7,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -37,6 +35,10 @@ object CartManager {
     private val _cartItems = mutableStateListOf<CartItem>()
     val cartItems: SnapshotStateList<CartItem> = _cartItems
 
+    // Flow для отслеживания изменений корзины
+    private val _cartItemsFlow = MutableStateFlow<List<CartItem>>(emptyList())
+    val cartItemsFlow: StateFlow<List<CartItem>> = _cartItemsFlow.asStateFlow()
+
     // Flow для отслеживания изменений количества каждого блюда
     private val _quantityFlows = mutableMapOf<String, MutableStateFlow<Int>>()
 
@@ -52,26 +54,22 @@ object CartManager {
         loadCartFromFirebase()
     }
 
-    // Метод для подписки на изменения количества конкретного блюда
-    @Composable
-    fun observeQuantity(dishId: String): State<Int> {
-        // Создаем или получаем существующий StateFlow для этого блюда
-        val flow = _quantityFlows.getOrPut(dishId) {
-            MutableStateFlow(getItemQuantity(dishId))
+    // Обновляет flow корзины
+    private fun updateCartFlow() {
+        _cartItemsFlow.value = _cartItems.toList()
+        // Обновляем все потоки количества
+        _quantityFlows.keys.forEach { dishId ->
+            _quantityFlows[dishId]?.value = getItemQuantity(dishId)
         }
-
-        // Подписываемся на изменения
-        val quantity by flow.collectAsState()
-
-        // Обновляем значение при изменении корзины
-        LaunchedEffect(dishId, _cartItems.size) {
-            flow.value = getItemQuantity(dishId)
-        }
-
-        return remember(quantity) { mutableStateOf(quantity) }
     }
 
-    // Обновляет все потоки количества
+    // Получить Flow для конкретного блюда
+    fun getQuantityFlow(dishId: String): StateFlow<Int> {
+        return _quantityFlows.getOrPut(dishId) {
+            MutableStateFlow(getItemQuantity(dishId))
+        }
+    }
+
     private fun updateQuantityFlow(dishId: String) {
         _quantityFlows[dishId]?.value = getItemQuantity(dishId)
     }
@@ -81,7 +79,9 @@ object CartManager {
             db.collection("carts").document(uid)
                 .collection("items")
                 .addSnapshotListener { snapshot, error ->
-                    if (error != null) return@addSnapshotListener
+                    if (error != null) {
+                        return@addSnapshotListener
+                    }
 
                     snapshot?.let { querySnapshot ->
                         val items = mutableListOf<CartItem>()
@@ -101,11 +101,7 @@ object CartManager {
                         }
                         _cartItems.clear()
                         _cartItems.addAll(items.sortedBy { it.addedAt })
-
-                        // Обновляем все потоки количества
-                        _quantityFlows.keys.forEach { dishId ->
-                            updateQuantityFlow(dishId)
-                        }
+                        updateCartFlow()
                     }
                 }
         }
@@ -168,7 +164,7 @@ object CartManager {
         } else {
             val newItem = CartItem(dish)
             _cartItems.add(newItem)
-            updateQuantityFlow(dish.id)
+            updateCartFlow()
             ioScope.launch {
                 saveCartItemToFirebase(dish, 1)
             }
@@ -177,7 +173,7 @@ object CartManager {
 
     fun removeFromCart(dishId: String) {
         _cartItems.removeAll { it.dish.id == dishId }
-        updateQuantityFlow(dishId)
+        updateCartFlow()
         ioScope.launch {
             removeCartItemFromFirebase(dishId)
         }
@@ -188,7 +184,7 @@ object CartManager {
         if (item != null) {
             if (quantity > 0) {
                 item.quantity = quantity
-                updateQuantityFlow(dishId)
+                updateCartFlow()
                 ioScope.launch {
                     updateQuantityInFirebase(dishId, quantity)
                 }
@@ -202,7 +198,7 @@ object CartManager {
         val item = _cartItems.find { it.dish.id == dishId }
         item?.let {
             it.quantity++
-            updateQuantityFlow(dishId)
+            updateCartFlow()
             ioScope.launch {
                 updateQuantityInFirebase(dishId, it.quantity)
             }
@@ -214,7 +210,7 @@ object CartManager {
         item?.let {
             if (it.quantity > 1) {
                 it.quantity--
-                updateQuantityFlow(dishId)
+                updateCartFlow()
                 ioScope.launch {
                     updateQuantityInFirebase(dishId, it.quantity)
                 }
@@ -226,9 +222,7 @@ object CartManager {
 
     fun clearCart() {
         _cartItems.clear()
-        _quantityFlows.keys.forEach { dishId ->
-            updateQuantityFlow(dishId)
-        }
+        updateCartFlow()
         ioScope.launch {
             clearCartInFirebase()
         }
@@ -262,11 +256,22 @@ object CartManager {
     }
 }
 
+// Исправленная функция для получения количества с автоматическим обновлением
 @Composable
 fun rememberCartItemQuantity(dishId: String): Int {
-    var quantity by remember { mutableStateOf(CartManager.getItemQuantity(dishId)) }
-    LaunchedEffect(dishId, CartManager.getCartSize()) {
-        quantity = CartManager.getItemQuantity(dishId)
+    // Подписываемся на изменения корзины через Flow
+    val cartItems by CartManager.cartItemsFlow.collectAsState()
+
+    // Пересчитываем количество при изменении корзины
+    return remember(cartItems) {
+        cartItems.find { it.dish.id == dishId }?.quantity ?: 0
     }
+}
+
+// Альтернативный вариант с использованием StateFlow для конкретного блюда
+@Composable
+fun rememberCartItemQuantityFlow(dishId: String): Int {
+    val quantityFlow = remember(dishId) { CartManager.getQuantityFlow(dishId) }
+    val quantity by quantityFlow.collectAsState()
     return quantity
 }
