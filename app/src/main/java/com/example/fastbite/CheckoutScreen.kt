@@ -49,34 +49,27 @@ fun CheckoutScreen(
     val totalPrice by derivedStateOf { CartManager.getTotalPrice() }
     val totalItems by derivedStateOf { CartManager.getTotalItems() }
 
-    // Состояния для формы
     var deliveryAddress by remember { mutableStateOf("") }
     var apartment by remember { mutableStateOf("") }
     var entrance by remember { mutableStateOf("") }
     var floor by remember { mutableStateOf("") }
     var intercom by remember { mutableStateOf("") }
     var deliveryComment by remember { mutableStateOf("") }
-    var leaveAtDoor by remember { mutableStateOf(false) }
-    var noCall by remember { mutableStateOf(false) }
 
     var selectedPaymentMethod by remember { mutableStateOf<PaymentMethod?>(null) }
 
+    // Поля для карты
     var cardNumber by remember { mutableStateOf("") }
     var cardExpiry by remember { mutableStateOf("") }
     var cardCVC by remember { mutableStateOf("") }
     var cardholderName by remember { mutableStateOf("") }
-    var saveCard by remember { mutableStateOf(false) }
 
     var userPhone by remember { mutableStateOf("") }
     var userEmail by remember { mutableStateOf(currentUserEmail) }
     var userName by remember { mutableStateOf("") }
 
-    var showSavedAddresses by remember { mutableStateOf(false) }
-    var showSavedCards by remember { mutableStateOf(false) }
     var savedAddresses by remember { mutableStateOf<List<Address>>(emptyList()) }
-    var savedCards by remember { mutableStateOf<List<CardInfo>>(emptyList()) }
 
-    // Загружаем данные пользователя
     LaunchedEffect(currentUserEmail) {
         if (currentUserEmail.isNotBlank()) {
             try {
@@ -84,7 +77,6 @@ fun CheckoutScreen(
                 userName = userDoc.getString("name") ?: ""
                 userPhone = userDoc.getString("phone") ?: ""
 
-                // Загружаем сохраненные адреса
                 val addressesSnapshot = db.collection("users").document(currentUserEmail)
                     .collection("address")
                     .get()
@@ -101,7 +93,6 @@ fun CheckoutScreen(
                     )
                 }
 
-                // Устанавливаем адрес по умолчанию
                 val defaultAddress = savedAddresses.find { it.isDefault }
                 defaultAddress?.let {
                     deliveryAddress = it.address
@@ -117,8 +108,8 @@ fun CheckoutScreen(
     }
 
     val canConfirmOrder = remember(
-        deliveryAddress, selectedPaymentMethod, cardNumber,
-        cardExpiry, cardCVC, cardholderName, userPhone, userEmail
+        deliveryAddress, selectedPaymentMethod, userPhone, userEmail,
+        cardNumber, cardExpiry, cardCVC, cardholderName
     ) {
         val hasValidAddress = deliveryAddress.isNotBlank() && deliveryAddress.length >= 5
         val hasValidContact = userPhone.isNotBlank() && userPhone.length >= 10
@@ -126,7 +117,6 @@ fun CheckoutScreen(
 
         val hasValidPayment = when (selectedPaymentMethod) {
             PaymentMethod.CASH -> true
-            PaymentMethod.ONLINE -> true
             PaymentMethod.CARD -> {
                 cardNumber.replace(" ", "").length >= 16 &&
                         cardExpiry.matches(Regex("\\d{2}/\\d{2}")) &&
@@ -148,113 +138,68 @@ fun CheckoutScreen(
 
         isLoading = true
 
-        // Получаем ресторан из первого блюда (все блюда из одного ресторана)
-        val restaurantId = cartItems.firstOrNull()?.dish?.owner ?: ""
-        val restaurantName = "Ресторан" // Можно загрузить из Firestore
+        // ГРУППИРУЕМ ПО РЕСТОРАНАМ И СОЗДАЕМ ОТДЕЛЬНЫЙ ЗАКАЗ ДЛЯ КАЖДОГО РЕСТОРАНА
+        val ordersByRestaurant = cartItems.groupBy { it.dish.owner }
 
-        val orderData = hashMapOf<String, Any>(
-            "userId" to currentUserEmail,
-            "userName" to userName,
-            "userEmail" to userEmail,
-            "userPhone" to userPhone,
-            "restaurantId" to restaurantId,
-            "restaurantName" to restaurantName,
-            "deliveryAddress" to mapOf(
-                "address" to deliveryAddress,
-                "apartment" to apartment,
-                "entrance" to entrance,
-                "floor" to floor,
-                "intercom" to intercom
-            ),
-            "deliveryComment" to deliveryComment,
-            "leaveAtDoor" to leaveAtDoor,
-            "noCall" to noCall,
-            "paymentMethod" to (selectedPaymentMethod?.displayName ?: "Наличными"),
-            "totalAmount" to totalPrice,
-            "status" to "PENDING",
-            "createdAt" to FieldValue.serverTimestamp(),
-            "updatedAt" to FieldValue.serverTimestamp()
-        )
+        val ordersToCreate = ordersByRestaurant.map { (restaurantId, items) ->
+            val restaurantName = items.firstOrNull()?.dish?.owner?.split("@")?.first() ?: "Ресторан"
 
-        db.collection("orders").add(orderData)
-            .addOnSuccessListener { orderDoc ->
-                val orderId = orderDoc.id
-                val batch = db.batch()
+            val orderItems = items.map { cartItem ->
+                val discountPercentage = cartItem.dish.discount?.toDoubleOrNull() ?: 0.0
+                val originalPrice = cartItem.dish.price.toDoubleOrNull() ?: 0.0
+                val discountedPrice = if (discountPercentage > 0)
+                    originalPrice * (1 - discountPercentage / 100)
+                else originalPrice
 
-                // Сначала создаем список данных для сохранения
-                val orderItemsDataList = mutableListOf<Map<String, Any>>()
+                mapOf(
+                    "dishId" to cartItem.dish.id,
+                    "dishName" to cartItem.dish.name,
+                    "quantity" to cartItem.quantity,
+                    "price" to discountedPrice,
+                    "totalPrice" to discountedPrice * cartItem.quantity,
+                    "photoUrl" to cartItem.dish.photoUrl,
+                    "restaurantId" to restaurantId,
+                    "isDelivered" to false
+                )
+            }
 
-                cartItems.forEach { cartItem ->
-                    val discountPercentage = cartItem.dish.discount?.toDoubleOrNull() ?: 0.0
-                    val originalPrice = cartItem.dish.price.toDoubleOrNull() ?: 0.0
-                    val discountedPrice = if (discountPercentage > 0)
-                        originalPrice * (1 - discountPercentage / 100)
-                    else originalPrice
+            val totalAmount = orderItems.sumOf { (it["totalPrice"] as Double) }
 
-                    val orderItem = hashMapOf<String, Any>(
-                        "orderId" to orderId,
-                        "dishId" to cartItem.dish.id,
-                        "dishName" to cartItem.dish.name,
-                        "quantity" to cartItem.quantity,
-                        "price" to discountedPrice,
-                        "totalPrice" to discountedPrice * cartItem.quantity,
-                        "photoUrl" to cartItem.dish.photoUrl,
-                        "restaurantId" to restaurantId,
-                        "restaurantName" to restaurantName
-                    )
+            hashMapOf<String, Any>(
+                "userId" to currentUserEmail,
+                "userName" to userName.ifEmpty { currentUserEmail.split("@")[0] },
+                "userPhone" to userPhone,
+                "restaurantId" to restaurantId,
+                "restaurantName" to restaurantName,
+                "items" to orderItems,
+                "totalAmount" to totalAmount,
+                "status" to "PENDING",
+                "deliveryAddress" to mapOf(
+                    "address" to deliveryAddress,
+                    "apartment" to apartment,
+                    "entrance" to entrance,
+                    "floor" to floor,
+                    "intercom" to intercom
+                ),
+                "paymentMethod" to (selectedPaymentMethod?.displayName ?: "Наличными"),
+                "comment" to deliveryComment,
+                "createdAt" to FieldValue.serverTimestamp(),
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+        }
 
-                    val itemRef = db.collection("orders").document(orderId)
-                        .collection("items").document(cartItem.dish.id)
-                    batch.set(itemRef, orderItem)
+        // Сохраняем каждый заказ отдельно
+        val batch = db.batch()
+        ordersToCreate.forEach { orderData ->
+            val orderRef = db.collection("orders").document()
+            batch.set(orderRef, orderData)
+        }
 
-                    // Сохраняем для подколлекции пользователя
-                    orderItemsDataList.add(
-                        hashMapOf(
-                            "dishId" to cartItem.dish.id,
-                            "dishName" to cartItem.dish.name,
-                            "quantity" to cartItem.quantity,
-                            "price" to discountedPrice,
-                            "restaurantId" to restaurantId,
-                            "restaurantName" to restaurantName
-                        )
-                    )
-                }
-
-                batch.commit()
-                    .addOnSuccessListener {
-                        // Сохраняем информацию о заказе для возможности оставить отзыв
-                        db.collection("users").document(currentUserEmail)
-                            .collection("orders")
-                            .document(orderId)
-                            .set(
-                                hashMapOf(
-                                    "orderId" to orderId,
-                                    "items" to orderItemsDataList,
-                                    "createdAt" to FieldValue.serverTimestamp(),
-                                    "status" to "PENDING",
-                                    "restaurantId" to restaurantId,
-                                    "restaurantName" to restaurantName,
-                                    "totalAmount" to totalPrice
-                                )
-                            )
-                            .addOnSuccessListener {
-                                CartManager.clearCart()
-                                isLoading = false
-                                showSuccessDialog = true
-                            }
-                            .addOnFailureListener { e ->
-                                CartManager.clearCart()
-                                isLoading = false
-                                showSuccessDialog = true
-                                // Логируем ошибку, но не показываем пользователю, так как заказ уже создан
-                                e.printStackTrace()
-                            }
-                    }
-                    .addOnFailureListener { e ->
-                        isLoading = false
-                        errorMessage = "Ошибка при сохранении заказа: ${e.message}"
-                        showErrorDialog = true
-                    }
+        batch.commit()
+            .addOnSuccessListener {
+                CartManager.clearCart()
+                isLoading = false
+                showSuccessDialog = true
             }
             .addOnFailureListener { e ->
                 isLoading = false
@@ -389,19 +334,6 @@ fun CheckoutScreen(
             item {
                 Text(text = "Доставка", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
-                if (savedAddresses.isNotEmpty()) {
-                    OutlinedButton(
-                        onClick = { showSavedAddresses = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Outlined.LocationOn, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(text = "Выбрать сохраненный адрес")
-                    }
-                    Spacer(Modifier.height(8.dp))
-                }
-
                 OutlinedTextField(
                     value = deliveryAddress,
                     onValueChange = { deliveryAddress = it },
@@ -457,33 +389,15 @@ fun CheckoutScreen(
             }
 
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = deliveryComment,
-                        onValueChange = { deliveryComment = it },
-                        label = { Text("Комментарий для курьера") },
-                        modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = { Icon(Icons.Outlined.Comment, contentDescription = null) },
-                        maxLines = 3,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(checked = leaveAtDoor, onCheckedChange = { leaveAtDoor = it })
-                        Text(text = "Оставить у двери", modifier = Modifier.padding(start = 8.dp))
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(checked = noCall, onCheckedChange = { noCall = it })
-                        Text(text = "Не звонить, сообщить в чат", modifier = Modifier.padding(start = 8.dp))
-                    }
-                }
+                OutlinedTextField(
+                    value = deliveryComment,
+                    onValueChange = { deliveryComment = it },
+                    label = { Text("Комментарий для курьера") },
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = { Icon(Icons.Outlined.Comment, contentDescription = null) },
+                    maxLines = 3,
+                    shape = RoundedCornerShape(12.dp)
+                )
             }
 
             item { Spacer(Modifier.height(8.dp)) }
@@ -492,37 +406,58 @@ fun CheckoutScreen(
                 Text(text = "Оплата", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PaymentMethod.values().forEach { method ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { selectedPaymentMethod = method }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = selectedPaymentMethod == method,
-                                onClick = { selectedPaymentMethod = method }
-                            )
-                            Icon(
-                                when (method) {
-                                    PaymentMethod.CARD -> Icons.Outlined.CreditCard
-                                    PaymentMethod.CASH -> Icons.Outlined.Money
-                                    PaymentMethod.ONLINE -> Icons.Outlined.Payment
-                                },
-                                contentDescription = null,
-                                modifier = Modifier.padding(start = 8.dp).size(24.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = method.displayName,
-                                modifier = Modifier.padding(start = 12.dp),
-                                fontSize = 16.sp
-                            )
-                        }
+                    // Наличными
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedPaymentMethod = PaymentMethod.CASH }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedPaymentMethod == PaymentMethod.CASH,
+                            onClick = { selectedPaymentMethod = PaymentMethod.CASH }
+                        )
+                        Icon(
+                            Icons.Outlined.Money,
+                            contentDescription = null,
+                            modifier = Modifier.padding(start = 8.dp).size(24.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Наличными при получении",
+                            modifier = Modifier.padding(start = 12.dp),
+                            fontSize = 16.sp
+                        )
+                    }
+
+                    // Банковская карта
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedPaymentMethod = PaymentMethod.CARD }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedPaymentMethod == PaymentMethod.CARD,
+                            onClick = { selectedPaymentMethod = PaymentMethod.CARD }
+                        )
+                        Icon(
+                            Icons.Outlined.CreditCard,
+                            contentDescription = null,
+                            modifier = Modifier.padding(start = 8.dp).size(24.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Банковская карта",
+                            modifier = Modifier.padding(start = 12.dp),
+                            fontSize = 16.sp
+                        )
                     }
                 }
 
+                // Поля для карты (показываются только если выбран способ оплаты картой)
                 if (selectedPaymentMethod == PaymentMethod.CARD) {
                     Column(
                         modifier = Modifier.padding(top = 16.dp),
@@ -549,6 +484,7 @@ fun CheckoutScreen(
                                 label = { Text("Срок действия *") },
                                 modifier = Modifier.weight(1f),
                                 placeholder = { Text("MM/YY") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 shape = RoundedCornerShape(12.dp)
                             )
                             OutlinedTextField(
@@ -570,14 +506,6 @@ fun CheckoutScreen(
                             placeholder = { Text("IVAN IVANOV") },
                             shape = RoundedCornerShape(12.dp)
                         )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(checked = saveCard, onCheckedChange = { saveCard = it })
-                            Text(text = "Сохранить карту для будущих покупок", modifier = Modifier.padding(start = 8.dp))
-                        }
                     }
                 }
             }
@@ -586,69 +514,11 @@ fun CheckoutScreen(
         }
     }
 
-    // Диалог выбора сохраненных адресов
-    if (showSavedAddresses) {
-        AlertDialog(
-            onDismissRequest = { showSavedAddresses = false },
-            title = { Text("Выберите адрес") },
-            text = {
-                Column {
-                    savedAddresses.forEach { address ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    deliveryAddress = address.address
-                                    apartment = address.apartment
-                                    entrance = address.entrance
-                                    floor = address.floor
-                                    intercom = address.intercom
-                                    showSavedAddresses = false
-                                }
-                                .padding(vertical = 4.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Outlined.LocationOn, contentDescription = null, modifier = Modifier.size(20.dp))
-                                Spacer(Modifier.width(12.dp))
-                                Column {
-                                    Text(text = address.address, fontWeight = FontWeight.Medium)
-                                    if (address.isDefault) {
-                                        Text(text = "Основной адрес", fontSize = 12.sp, color = Color.Gray)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showSavedAddresses = false }) {
-                    Text("Отмена")
-                }
-            }
-        )
-    }
-
     if (showSuccessDialog) {
         AlertDialog(
             onDismissRequest = { showSuccessDialog = false },
             title = { Text("Заказ успешно оформлен!") },
-            text = {
-                Column {
-                    Text("Ваш заказ принят в обработку.")
-                    Spacer(Modifier.height(8.dp))
-                    Text("Номер заказа будет отправлен на ваш email.")
-                    Spacer(Modifier.height(8.dp))
-                    Text("Спасибо за покупку!")
-                }
-            },
+            text = { Text("Ваш заказ принят в обработку. Спасибо за покупку!") },
             confirmButton = {
                 Button(
                     onClick = {
@@ -687,8 +557,6 @@ fun CheckoutScreen(
 @Composable
 fun CheckoutItemCard(cartItem: CartItem) {
     val dish = cartItem.dish
-    val currentQuantity = cartItem.quantity
-
     val discountPercentage = dish.discount?.toDoubleOrNull() ?: 0.0
     val originalPrice = dish.price.toDoubleOrNull() ?: 0.0
     val discountedPrice = if (discountPercentage > 0)
@@ -725,14 +593,14 @@ fun CheckoutItemCard(cartItem: CartItem) {
                     maxLines = 1
                 )
                 Text(
-                    text = "${"%.0f".format(discountedPrice)} тг × $currentQuantity",
+                    text = "${"%.0f".format(discountedPrice)} тг × ${cartItem.quantity}",
                     fontSize = 14.sp,
                     color = Color.Gray
                 )
             }
 
             Text(
-                text = "${"%.0f".format(discountedPrice * currentQuantity)} тг",
+                text = "${"%.0f".format(discountedPrice * cartItem.quantity)} тг",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -743,16 +611,8 @@ fun CheckoutItemCard(cartItem: CartItem) {
 
 enum class PaymentMethod(val displayName: String) {
     CARD("Банковская карта"),
-    CASH("Наличными при получении"),
-    ONLINE("Онлайн-оплата")
+    CASH("Наличными при получении")
 }
-
-data class CardInfo(
-    val id: String = "",
-    val last4: String = "",
-    val expiry: String = "",
-    val cardholderName: String = ""
-)
 
 private fun String.formatCardNumber(): String {
     val cleaned = this.filter { it.isDigit() }
