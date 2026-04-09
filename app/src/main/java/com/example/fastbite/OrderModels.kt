@@ -31,12 +31,14 @@ enum class OrderStatus(val displayName: String, val color: Long) {
 }
 
 data class OrderItem(
-    val dishId: String = "",
-    val dishName: String = "",
-    val quantity: Int = 1,
-    val price: Double = 0.0,
-    val totalPrice: Double = 0.0,
-    val photoUrl: String = ""
+    val dishId: String,
+    val dishName: String,
+    val quantity: Int,
+    val price: Double,
+    val totalPrice: Double,
+    val photoUrl: String = "",
+    val restaurantId: String = "",
+    val isDelivered: Boolean = false
 )
 
 data class DeliveryAddress(

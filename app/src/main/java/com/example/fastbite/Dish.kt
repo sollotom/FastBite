@@ -27,9 +27,9 @@ data class Dish(
     val discount: String = "",
     val popular: Boolean = false,
     val dateAdded: String = "",
-    val owner: String = "",
+    val owner: String = "", // Это restaurantId!
     val reviews: List<Review> = emptyList(),
-    val reviewsIds: List<String> = emptyList() // Добавляем список ID отзывов
+    val reviewsIds: List<String> = emptyList()
 )
 
 data class Review(
@@ -40,6 +40,6 @@ data class Review(
     val comment: String = "",
     val date: String = "",
     val dishId: String = "",
-    val dishName: String = "", // Добавляем название блюда для отображения
-    val restaurantId: String = "" // Добавляем ID ресторана
+    val dishName: String = "",
+    val restaurantId: String = ""
 )

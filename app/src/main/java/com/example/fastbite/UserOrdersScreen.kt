@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +20,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,14 +33,37 @@ fun UserOrdersScreen(
     val currentUser = FirebaseAuth.getInstance().currentUser
     val userId = currentUser?.email ?: ""
     val userName = currentUser?.displayName ?: currentUser?.email?.split("@")?.first() ?: ""
+    val coroutineScope = rememberCoroutineScope()
 
     var orders by remember { mutableStateOf<List<Order>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
-    var selectedOrderForReview by remember { mutableStateOf<Order?>(null) }
     var selectedDishForReview by remember { mutableStateOf<Dish?>(null) }
+    var existingReview by remember { mutableStateOf<Review?>(null) }
     var showReviewDialog by remember { mutableStateOf(false) }
 
-    val coroutineScope = rememberCoroutineScope()
+    var userReviews by remember { mutableStateOf<Map<String, Review>>(emptyMap()) }
+
+    LaunchedEffect(userId) {
+        val reviewsSnapshot = db.collection("reviews")
+            .whereEqualTo("userEmail", userId)
+            .get()
+            .await()
+
+        userReviews = reviewsSnapshot.documents.mapNotNull { doc ->
+            val dishId = doc.getString("dishId") ?: return@mapNotNull null
+            dishId to Review(
+                id = doc.id,
+                userName = doc.getString("userName") ?: "",
+                userEmail = doc.getString("userEmail") ?: "",
+                rating = doc.getDouble("rating") ?: 0.0,
+                comment = doc.getString("comment") ?: "",
+                date = doc.getString("date") ?: "",
+                dishId = dishId,
+                dishName = doc.getString("dishName") ?: "",
+                restaurantId = doc.getString("restaurantId") ?: ""
+            )
+        }.toMap()
+    }
 
     LaunchedEffect(userId) {
         db.collection("orders")
@@ -50,9 +75,35 @@ fun UserOrdersScreen(
                     return@addSnapshotListener
                 }
 
-                orders = snapshot?.documents?.mapNotNull { doc ->
+                val loadedOrders = mutableListOf<Order>()
+
+                snapshot?.documents?.forEach { doc ->
                     try {
-                        Order(
+                        val allItems = mutableListOf<OrderItem>()
+                        val itemsField = doc.get("items")
+
+                        when (itemsField) {
+                            is List<*> -> {
+                                itemsField.forEach { item ->
+                                    if (item is Map<*, *>) {
+                                        allItems.add(
+                                            OrderItem(
+                                                dishId = item["dishId"] as? String ?: "",
+                                                dishName = item["dishName"] as? String ?: "",
+                                                quantity = (item["quantity"] as? Long)?.toInt() ?: 1,
+                                                price = (item["price"] as? Double) ?: 0.0,
+                                                totalPrice = (item["totalPrice"] as? Double) ?: 0.0,
+                                                photoUrl = item["photoUrl"] as? String ?: "",
+                                                restaurantId = item["restaurantId"] as? String ?: "",
+                                                isDelivered = item["isDelivered"] as? Boolean ?: false
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        val order = Order(
                             id = doc.id,
                             userId = doc.getString("userId") ?: "",
                             userName = doc.getString("userName") ?: "",
@@ -60,22 +111,11 @@ fun UserOrdersScreen(
                             userAddress = doc.getString("userAddress") ?: "",
                             restaurantId = doc.getString("restaurantId") ?: "",
                             restaurantName = doc.getString("restaurantName") ?: "",
-                            items = (doc.get("items") as? List<Map<String, Any>>)?.map { item ->
-                                OrderItem(
-                                    dishId = item["dishId"] as? String ?: "",
-                                    dishName = item["dishName"] as? String ?: "",
-                                    quantity = (item["quantity"] as? Long)?.toInt() ?: 1,
-                                    price = (item["price"] as? Double) ?: 0.0,
-                                    totalPrice = (item["totalPrice"] as? Double) ?: 0.0,
-                                    photoUrl = item["photoUrl"] as? String ?: ""
-                                )
-                            } ?: emptyList(),
+                            items = allItems,
                             totalAmount = doc.getDouble("totalAmount") ?: 0.0,
-                            status = OrderStatus.values().find {
-                                it.name == doc.getString("status")
-                            } ?: OrderStatus.PENDING,
-                            createdAt = (doc.getTimestamp("createdAt")?.toDate() ?: Date()),
-                            updatedAt = (doc.getTimestamp("updatedAt")?.toDate() ?: Date()),
+                            status = OrderStatus.values().find { it.name == doc.getString("status") } ?: OrderStatus.PENDING,
+                            createdAt = doc.getTimestamp("createdAt")?.toDate() ?: Date(),
+                            updatedAt = doc.getTimestamp("updatedAt")?.toDate() ?: Date(),
                             deliveryAddress = DeliveryAddress(
                                 address = doc.getString("deliveryAddress.address") ?: "",
                                 apartment = doc.getString("deliveryAddress.apartment") ?: "",
@@ -86,10 +126,13 @@ fun UserOrdersScreen(
                             paymentMethod = doc.getString("paymentMethod") ?: "Наличными",
                             comment = doc.getString("comment") ?: ""
                         )
+                        loadedOrders.add(order)
                     } catch (e: Exception) {
-                        null
+                        e.printStackTrace()
                     }
-                } ?: emptyList()
+                }
+
+                orders = loadedOrders
                 isLoading = false
             }
     }
@@ -159,13 +202,14 @@ fun UserOrdersScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(orders) { order ->
-                    OrderCard(
+                    OrderCardForUser(
                         order = order,
-                        onReviewClick = { dish ->
+                        userReviews = userReviews,
+                        onReviewClick = { dish, existingReviewData ->
                             selectedDishForReview = dish
+                            existingReview = existingReviewData
                             showReviewDialog = true
-                        },
-                        canReview = order.status == OrderStatus.DELIVERED
+                        }
                     )
                 }
 
@@ -176,35 +220,67 @@ fun UserOrdersScreen(
         }
     }
 
-    // Диалог добавления отзыва
     if (showReviewDialog && selectedDishForReview != null) {
-        AddReviewDialog(
+        AddOrEditReviewDialog(
             dish = selectedDishForReview!!,
+            existingReview = existingReview,
             userEmail = userId,
             userName = userName,
             onDismiss = {
                 showReviewDialog = false
                 selectedDishForReview = null
+                existingReview = null
             },
             onReviewAdded = {
-                // Обновляем данные
                 showReviewDialog = false
                 selectedDishForReview = null
+                existingReview = null
+                coroutineScope.launch {
+                    val reviewsSnapshot = db.collection("reviews")
+                        .whereEqualTo("userEmail", userId)
+                        .get()
+                        .await()
+                    userReviews = reviewsSnapshot.documents.mapNotNull { doc ->
+                        val dishId = doc.getString("dishId") ?: return@mapNotNull null
+                        dishId to Review(
+                            id = doc.id,
+                            userName = doc.getString("userName") ?: "",
+                            userEmail = doc.getString("userEmail") ?: "",
+                            rating = doc.getDouble("rating") ?: 0.0,
+                            comment = doc.getString("comment") ?: "",
+                            date = doc.getString("date") ?: "",
+                            dishId = dishId,
+                            dishName = doc.getString("dishName") ?: "",
+                            restaurantId = doc.getString("restaurantId") ?: ""
+                        )
+                    }.toMap()
+                }
             }
         )
     }
 }
 
 @Composable
-fun OrderCard(
+fun OrderCardForUser(
     order: Order,
-    onReviewClick: (Dish) -> Unit,
-    canReview: Boolean
+    userReviews: Map<String, Review>,
+    onReviewClick: (Dish, Review?) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
+    val allItemsDelivered = order.items.isNotEmpty() && order.items.all { it.isDelivered }
+    val someItemsDelivered = order.items.any { it.isDelivered } && !allItemsDelivered
+
+    val customStatus = when {
+        allItemsDelivered -> "Все доставлено"
+        someItemsDelivered -> "Частично доставлено"
+        else -> null
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(
@@ -214,11 +290,9 @@ fun OrderCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = !expanded }
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Шапка заказа
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -236,10 +310,20 @@ fun OrderCard(
                         color = Color.Gray
                     )
                 }
-                UserOrderStatusChip(status = order.status)
+
+                if (customStatus != null) {
+                    UserOrderStatusChipCustom(
+                        statusText = customStatus,
+                        statusColor = when {
+                            allItemsDelivered -> Color(0xFF4CAF50)
+                            else -> Color(0xFFFF9800)
+                        }
+                    )
+                } else {
+                    UserOrderStatusChip(status = order.status)
+                }
             }
 
-            // Краткая информация
             Text(
                 "Ресторан: ${order.restaurantName}",
                 fontSize = 14.sp,
@@ -265,11 +349,9 @@ fun OrderCard(
                 )
             }
 
-            // Развернутая информация
             if (expanded) {
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-                // Состав заказа
                 Text(
                     "Состав заказа:",
                     fontWeight = FontWeight.Bold,
@@ -277,8 +359,13 @@ fun OrderCard(
                 )
 
                 order.items.forEach { item ->
+                    val hasReview = userReviews.containsKey(item.dishId)
+                    val review = userReviews[item.dishId]
+
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -292,10 +379,36 @@ fun OrderCard(
                                 fontSize = 12.sp,
                                 color = Color.Gray
                             )
+
+                            if (item.isDelivered) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = Color(0xFF4CAF50),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        "Доставлено",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF4CAF50)
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    "Ожидает доставки",
+                                    fontSize = 11.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
                         }
 
-                        // Кнопка для отзыва (только для доставленных заказов)
-                        if (canReview) {
+                        if (item.isDelivered) {
                             Button(
                                 onClick = {
                                     val dish = Dish(
@@ -304,77 +417,219 @@ fun OrderCard(
                                         price = item.price.toString(),
                                         photoUrl = item.photoUrl
                                     )
-                                    onReviewClick(dish)
+                                    onReviewClick(dish, review)
                                 },
                                 modifier = Modifier
-                                    .height(32.dp)
+                                    .height(36.dp)
                                     .padding(start = 8.dp),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFFFFC107),
+                                    containerColor = if (hasReview) Color(0xFF4CAF50) else Color(0xFFFFC107),
                                     contentColor = Color.Black
                                 )
                             ) {
                                 Icon(
-                                    Icons.Default.Star,
-                                    contentDescription = "Оставить отзыв",
-                                    modifier = Modifier.size(14.dp)
+                                    if (hasReview) Icons.Default.Edit else Icons.Default.Star,
+                                    contentDescription = if (hasReview) "Редактировать отзыв" else "Оставить отзыв",
+                                    modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Оценить", fontSize = 12.sp)
+                                Text(
+                                    if (hasReview) "Изменить" else "Оценить",
+                                    fontSize = 13.sp
+                                )
                             }
                         }
                     }
                 }
 
-                // Адрес доставки
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                Text(
-                    "Адрес доставки:",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
-                Text(
-                    order.deliveryAddress.address,
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-
-                if (order.deliveryAddress.apartment.isNotBlank() ||
-                    order.deliveryAddress.entrance.isNotBlank() ||
-                    order.deliveryAddress.floor.isNotBlank()) {
-                    Text(
-                        buildString {
-                            if (order.deliveryAddress.apartment.isNotBlank()) append("кв. ${order.deliveryAddress.apartment}")
-                            if (order.deliveryAddress.entrance.isNotBlank()) append(", под. ${order.deliveryAddress.entrance}")
-                            if (order.deliveryAddress.floor.isNotBlank()) append(", эт. ${order.deliveryAddress.floor}")
-                            if (order.deliveryAddress.intercom.isNotBlank()) append(", домофон ${order.deliveryAddress.intercom}")
-                        },
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-                }
-
-                Text(
-                    "Способ оплаты: ${order.paymentMethod}",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-
+                Text("Адрес доставки:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(order.deliveryAddress.address, fontSize = 14.sp, color = Color.Gray)
+                Text("Способ оплаты: ${order.paymentMethod}", fontSize = 14.sp, color = Color.Gray)
                 if (order.comment.isNotBlank()) {
-                    Text(
-                        "Комментарий: ${order.comment}",
-                        fontSize = 14.sp,
-                        color = Color.Gray
-                    )
+                    Text("Комментарий: ${order.comment}", fontSize = 14.sp, color = Color.Gray)
                 }
             }
         }
     }
 }
 
-// Функция для отображения статуса заказа в виде цветного чипа (для пользователя)
+@Composable
+fun AddOrEditReviewDialog(
+    dish: Dish,
+    existingReview: Review?,
+    userEmail: String,
+    userName: String,
+    onDismiss: () -> Unit,
+    onReviewAdded: () -> Unit
+) {
+    var rating by remember { mutableStateOf(existingReview?.rating?.toInt() ?: 0) }
+    var comment by remember { mutableStateOf(existingReview?.comment ?: "") }
+    var isLoading by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf("") }
+    val coroutineScope = rememberCoroutineScope()
+    val isEditing = existingReview != null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                if (isEditing) "Редактировать отзыв" else "Оставить отзыв",
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    "Блюдо: ${dish.name}",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Column {
+                    Text(
+                        "Ваша оценка",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        repeat(5) { index ->
+                            IconButton(
+                                onClick = { rating = index + 1 },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    if (index < rating) Icons.Filled.Star else Icons.Outlined.Star,
+                                    contentDescription = "Рейтинг ${index + 1}",
+                                    tint = if (index < rating) Color(0xFFFFC107) else Color.Gray,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = comment,
+                    onValueChange = { comment = it },
+                    label = { Text("Ваш отзыв") },
+                    placeholder = { Text("Поделитесь впечатлениями о блюде...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 5,
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                if (error.isNotEmpty()) {
+                    Text(
+                        error,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (rating == 0) {
+                        error = "Пожалуйста, поставьте оценку"
+                        return@Button
+                    }
+
+                    isLoading = true
+                    error = ""
+
+                    coroutineScope.launch {
+                        if (isEditing && existingReview != null) {
+                            ReviewManager.updateReview(
+                                reviewId = existingReview.id,
+                                rating = rating.toDouble(),
+                                comment = comment,
+                                onSuccess = {
+                                    isLoading = false
+                                    onReviewAdded()
+                                    onDismiss()
+                                },
+                                onError = { err ->
+                                    isLoading = false
+                                    error = err
+                                }
+                            )
+                        } else {
+                            ReviewManager.addReview(
+                                dishId = dish.id,
+                                userEmail = userEmail,
+                                userName = userName,
+                                rating = rating.toDouble(),
+                                comment = comment,
+                                onSuccess = {
+                                    isLoading = false
+                                    onReviewAdded()
+                                    onDismiss()
+                                },
+                                onError = { err ->
+                                    isLoading = false
+                                    error = err
+                                }
+                            )
+                        }
+                    }
+                },
+                enabled = !isLoading,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(if (isEditing) "Сохранить изменения" else "Отправить отзыв")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isLoading
+            ) {
+                Text("Отмена")
+            }
+        },
+        shape = RoundedCornerShape(28.dp)
+    )
+}
+
+@Composable
+fun UserOrderStatusChipCustom(statusText: String, statusColor: Color) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = statusColor,
+        modifier = Modifier.wrapContentSize()
+    ) {
+        Text(
+            statusText,
+            color = Color.White,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
+}
+
 @Composable
 fun UserOrderStatusChip(status: OrderStatus) {
     val (backgroundColor, textColor) = when (status) {

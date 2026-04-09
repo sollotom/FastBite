@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.firestore.FirebaseFirestore
@@ -52,6 +53,82 @@ data class FAQItem(
     val answer: String
 )
 
+// ==================== КОМПОНЕНТ ЗВЕЗД ====================
+
+// ==================== КОМПОНЕНТ ЗВЕЗД (ИСПРАВЛЕНО) ====================
+
+@Composable
+fun RatingStarsVisual(
+    rating: Double,
+    modifier: Modifier = Modifier,
+    starSize: Dp = 16.dp
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = modifier
+    ) {
+        // Округляем рейтинг до ближайшего целого для отображения звезд
+        // 1 -> 1 звезда, 2 -> 2 звезды, и т.д.
+        val fullStars = rating.toInt()
+
+        // Проверяем, есть ли половина звезды (если дробная часть >= 0.5)
+        val hasHalfStar = (rating - fullStars) >= 0.5
+
+        // Рисуем закрашенные (золотые) звезды
+        repeat(fullStars) {
+            Icon(
+                Icons.Filled.Star,
+                contentDescription = null,
+                tint = Color(0xFFFFC107), // Золотой цвет
+                modifier = Modifier.size(starSize)
+            )
+        }
+
+        // Рисуем половинчатую звезду если нужно
+        if (hasHalfStar) {
+            Icon(
+                Icons.Filled.StarHalf,
+                contentDescription = null,
+                tint = Color(0xFFFFC107), // Золотой цвет
+                modifier = Modifier.size(starSize)
+            )
+        }
+
+        // Рисуем пустые (серые) звезды
+        val emptyStars = 5 - fullStars - if (hasHalfStar) 1 else 0
+        repeat(emptyStars) {
+            Icon(
+                Icons.Outlined.StarBorder, // Используем StarBorder для пустых звезд
+                contentDescription = null,
+                tint = Color.Gray, // Серый цвет
+                modifier = Modifier.size(starSize)
+            )
+        }
+    }
+}
+
+// Альтернативный вариант с отображением рейтинга текстом
+@Composable
+fun RatingStarsWithText(
+    rating: Double,
+    modifier: Modifier = Modifier,
+    starSize: Dp = 16.dp
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier
+    ) {
+        RatingStarsVisual(rating = rating, starSize = starSize)
+        Text(
+            text = "%.1f".format(rating),
+            fontSize = (starSize.value - 2).sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFFFFC107)
+        )
+    }
+}
 // ==================== MAIN PROFILE SCREEN ====================
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,7 +136,8 @@ data class FAQItem(
 fun ProfileScreen(
     userEmail: String,
     onLogout: () -> Unit,
-    onNavigateToOrders: () -> Unit
+    onNavigateToOrders: () -> Unit,
+    onNavigateToDish: (String) -> Unit = {}  // Добавлен параметр для перехода к блюду
 ) {
     val context = LocalContext.current
     val db = FirebaseFirestore.getInstance()
@@ -347,7 +425,8 @@ fun ProfileScreen(
                             onEditReview = { review ->
                                 selectedReviewForEdit = review
                                 navigateTo(ProfileScreenType.EditReview)
-                            }
+                            },
+                            onNavigateToDish = onNavigateToDish
                         )
                     }
                     ProfileScreenType.EditReview -> {
@@ -393,7 +472,6 @@ fun ProfileScreen(
 
 // ==================== FIRESTORE FUNCTIONS ====================
 
-// --- Адреса ---
 private fun loadAddresses(email: String, db: FirebaseFirestore, onResult: (List<Address>) -> Unit) {
     db.collection("users").document(email).collection("address").get()
         .addOnSuccessListener { documents ->
@@ -480,26 +558,16 @@ private suspend fun saveUser(email: String, name: String, phone: String, db: Fir
     db.collection("users").document(email).set(data, com.google.firebase.firestore.SetOptions.merge()).await()
 }
 
-// --- Отзывы (НОВЫЕ ФУНКЦИИ) ---
-
-// Загрузка отзывов пользователя из Firebase (ИСПРАВЛЕНО)
 private suspend fun loadUserReviews(userEmail: String): List<Review> {
     val db = FirebaseFirestore.getInstance()
     return try {
-        android.util.Log.d("ProfileScreen", "Загрузка отзывов для: $userEmail")
-
         val snapshot = db.collection("reviews")
             .whereEqualTo("userEmail", userEmail)
             .get()
             .await()
 
-        android.util.Log.d("ProfileScreen", "Найдено документов: ${snapshot.size()}")
-
         val reviews = snapshot.documents.mapNotNull { doc: com.google.firebase.firestore.DocumentSnapshot ->
             try {
-                val data = doc.data
-                android.util.Log.d("ProfileScreen", "Документ ${doc.id}: $data")
-
                 Review(
                     id = doc.id,
                     userName = doc.getString("userName") ?: "",
@@ -512,13 +580,11 @@ private suspend fun loadUserReviews(userEmail: String): List<Review> {
                     restaurantId = doc.getString("restaurantId") ?: ""
                 )
             } catch (e: Exception) {
-                android.util.Log.e("ProfileScreen", "Ошибка парсинга документа ${doc.id}: ${e.message}")
                 null
             }
         }
 
-        // Сортируем вручную по дате (от новых к старым)
-        val sortedReviews = reviews.sortedByDescending { review: Review ->
+        reviews.sortedByDescending { review: Review ->
             try {
                 val parts = review.date.split(" ")
                 val dateParts = parts[0].split(".")
@@ -535,11 +601,7 @@ private suspend fun loadUserReviews(userEmail: String): List<Review> {
                 0L
             }
         }
-
-        android.util.Log.d("ProfileScreen", "Итоговое количество отзывов: ${sortedReviews.size}")
-        sortedReviews
     } catch (e: Exception) {
-        android.util.Log.e("ProfileScreen", "Ошибка загрузки: ${e.message}")
         e.printStackTrace()
         emptyList()
     }
@@ -547,7 +609,7 @@ private suspend fun loadUserReviews(userEmail: String): List<Review> {
 
 private suspend fun updateReviewInFirebase(reviewId: String, rating: Float, comment: String) {
     val db = FirebaseFirestore.getInstance()
-    val currentDate = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+    val currentDate = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
 
     val updates = hashMapOf<String, Any>(
         "rating" to rating.toDouble(),
@@ -557,24 +619,19 @@ private suspend fun updateReviewInFirebase(reviewId: String, rating: Float, comm
 
     db.collection("reviews").document(reviewId).update(updates).await()
 
-    // Обновляем рейтинг блюда
     val reviewDoc = db.collection("reviews").document(reviewId).get().await()
     val dishId = reviewDoc.getString("dishId") ?: return
     updateDishRating(dishId)
 }
 
-// Удаление отзыва из Firebase
 private suspend fun deleteReviewFromFirebase(reviewId: String) {
     val db = FirebaseFirestore.getInstance()
 
-    // Получаем dishId перед удалением
     val reviewDoc = db.collection("reviews").document(reviewId).get().await()
     val dishId = reviewDoc.getString("dishId") ?: ""
 
-    // Удаляем отзыв
     db.collection("reviews").document(reviewId).delete().await()
 
-    // Удаляем ID отзыва из блюда и обновляем рейтинг
     if (dishId.isNotBlank()) {
         db.collection("dishes").document(dishId)
             .update("reviewsIds", com.google.firebase.firestore.FieldValue.arrayRemove(reviewId))
@@ -583,7 +640,6 @@ private suspend fun deleteReviewFromFirebase(reviewId: String) {
     }
 }
 
-// Обновление среднего рейтинга блюда
 private suspend fun updateDishRating(dishId: String) {
     val db = FirebaseFirestore.getInstance()
 
@@ -1206,10 +1262,15 @@ fun AboutSection(title: String, icon: ImageVector, content: String) {
     }
 }
 
-// ==================== REVIEWS SCREENS (ИСПОЛЬЗУЮТ FIREBASE) ====================
+// ==================== REVIEWS SCREENS ====================
 
 @Composable
-fun MyReviewsContent(userEmail: String, userName: String, onEditReview: (Review) -> Unit) {
+fun MyReviewsContent(
+    userEmail: String,
+    userName: String,
+    onEditReview: (Review) -> Unit,
+    onNavigateToDish: (String) -> Unit = {}
+) {
     var reviews by remember { mutableStateOf<List<Review>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -1322,17 +1383,30 @@ fun MyReviewsContent(userEmail: String, userName: String, onEditReview: (Review)
                         onDelete = {
                             reviewToDelete = review
                             showDeleteDialog = true
-                        }
+                        },
+                        onNavigateToDish = onNavigateToDish
                     )
                 }
             }
         }
     }
 }
+
 @Composable
-fun MyReviewCard(review: Review, onEdit: () -> Unit, onDelete: () -> Unit) {
+fun MyReviewCard(
+    review: Review,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    onNavigateToDish: (String) -> Unit = {}
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                if (review.dishId.isNotBlank()) {
+                    onNavigateToDish(review.dishId)
+                }
+            },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -1371,26 +1445,20 @@ fun MyReviewCard(review: Review, onEdit: () -> Unit, onDelete: () -> Unit) {
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                repeat(5) { index ->
-                    Icon(
-                        if (index < review.rating) Icons.Filled.Star else Icons.Outlined.Star,
-                        null,
-                        tint = Color(0xFFFFC107),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                RatingStarsVisual(rating = review.rating, starSize = 18.dp)
                 Text(
                     text = "%.1f".format(review.rating),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFFFFC107),
-                    modifier = Modifier.padding(start = 4.dp)
+                    color = Color(0xFFFFC107)
                 )
             }
+
             Spacer(modifier = Modifier.height(8.dp))
             if (review.comment.isNotBlank()) {
                 Text(
@@ -1422,7 +1490,6 @@ fun EditReviewContent(
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        // Заголовок
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1446,7 +1513,6 @@ fun EditReviewContent(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // Информация о блюде
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -1470,7 +1536,6 @@ fun EditReviewContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Оценка
             Text(
                 text = "Ваша оценка",
                 fontSize = 18.sp,
@@ -1478,6 +1543,7 @@ fun EditReviewContent(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(12.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
@@ -1497,6 +1563,7 @@ fun EditReviewContent(
                     }
                 }
             }
+
             Text(
                 text = when (rating.toInt()) {
                     1 -> "Очень плохо"
@@ -1515,7 +1582,6 @@ fun EditReviewContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Комментарий
             Text(
                 text = "Ваш комментарий",
                 fontSize = 18.sp,
@@ -1523,6 +1589,7 @@ fun EditReviewContent(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(12.dp))
+
             OutlinedTextField(
                 value = comment,
                 onValueChange = { comment = it },
@@ -1535,7 +1602,6 @@ fun EditReviewContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Кнопки
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -1560,7 +1626,6 @@ fun EditReviewContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Кнопка удаления
             OutlinedButton(
                 onClick = { showDeleteConfirm = true },
                 modifier = Modifier.fillMaxWidth(),
@@ -1576,7 +1641,6 @@ fun EditReviewContent(
         }
     }
 
-    // Диалог подтверждения удаления
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
