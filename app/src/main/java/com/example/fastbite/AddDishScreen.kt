@@ -20,6 +20,68 @@ import com.google.firebase.ktx.Firebase
 import java.text.SimpleDateFormat
 import java.util.*
 
+// Строки для экрана добавления блюда
+object AddDishStrings {
+    var currentLanguage = Strings.currentLanguage
+
+    val addDish: String get() = if (currentLanguage.value == Language.KAZAKH) "Тағам қосу" else "Добавить блюдо"
+    val back: String get() = if (currentLanguage.value == Language.KAZAKH) "Артқа" else "Назад"
+    val basicInfo: String get() = if (currentLanguage.value == Language.KAZAKH) "Негізгі ақпарат" else "Основная информация"
+    val dishName: String get() = if (currentLanguage.value == Language.KAZAKH) "Тағам атауы *" else "Название блюда *"
+    val price: String get() = if (currentLanguage.value == Language.KAZAKH) "Бағасы *" else "Цена *"
+    val category: String get() = if (currentLanguage.value == Language.KAZAKH) "Санат" else "Категория"
+    val description: String get() = if (currentLanguage.value == Language.KAZAKH) "Сипаттама" else "Описание"
+    val photoUrl: String get() = if (currentLanguage.value == Language.KAZAKH) "Фото сілтемесі" else "Ссылка на фото"
+
+    val characteristics: String get() = if (currentLanguage.value == Language.KAZAKH) "Сипаттамалары" else "Характеристики"
+    val weightOrVolume: String get() = if (currentLanguage.value == Language.KAZAKH) "Салмағы / көлемі" else "Вес / объём"
+    val ingredients: String get() = if (currentLanguage.value == Language.KAZAKH) "Құрамы" else "Ингредиенты"
+    val calories: String get() = if (currentLanguage.value == Language.KAZAKH) "Калория" else "Калории"
+    val cookingTime: String get() = if (currentLanguage.value == Language.KAZAKH) "Уақыт (мин)" else "Время (мин)"
+    val proteins: String get() = if (currentLanguage.value == Language.KAZAKH) "Ақуыздар" else "Белки"
+    val fats: String get() = if (currentLanguage.value == Language.KAZAKH) "Майлар" else "Жиры"
+    val carbs: String get() = if (currentLanguage.value == Language.KAZAKH) "Көмірсулар" else "Углеводы"
+    val spiciness: String get() = if (currentLanguage.value == Language.KAZAKH) "Ащылығы (1-5)" else "Острота (1-5)"
+    val allergens: String get() = if (currentLanguage.value == Language.KAZAKH) "Аллергендер" else "Аллергены"
+
+    val additional: String get() = if (currentLanguage.value == Language.KAZAKH) "Қосымша" else "Дополнительно"
+    val addOns: String get() = if (currentLanguage.value == Language.KAZAKH) "Мүмкін қоспалар" else "Возможные добавки"
+    val addOnsPrice: String get() = if (currentLanguage.value == Language.KAZAKH) "Қоспалар бағасы" else "Цена добавок"
+    val portions: String get() = if (currentLanguage.value == Language.KAZAKH) "Порция саны" else "Количество порций"
+    val costPrice: String get() = if (currentLanguage.value == Language.KAZAKH) "Өзіндік құны" else "Себестоимость"
+    val discount: String get() = if (currentLanguage.value == Language.KAZAKH) "Жеңілдік (%)" else "Скидка (%)"
+    val vegetarian: String get() = if (currentLanguage.value == Language.KAZAKH) "Вегетариандық" else "Вегетарианское"
+    val popular: String get() = if (currentLanguage.value == Language.KAZAKH) "Танымал" else "Популярное"
+    val available: String get() = if (currentLanguage.value == Language.KAZAKH) "Қолжетімді" else "Доступно"
+
+    val saveDish: String get() = if (currentLanguage.value == Language.KAZAKH) "Тағамды сақтау" else "Сохранить блюдо"
+    val fillRequired: String get() = if (currentLanguage.value == Language.KAZAKH) "Міндетті өрістерді толтырыңыз: атауы және бағасы" else "Заполните обязательные поля: название и цена"
+    val saveError: String get() = if (currentLanguage.value == Language.KAZAKH) "Сақтау қатесі: " else "Ошибка сохранения: "
+    val categoryNotFound: String get() = if (currentLanguage.value == Language.KAZAKH) "Мұндай санат жоқ, «Басқа» ретінде сақталады" else "Такой категории нет, будет сохранено как «Другое»"
+
+    // Категории на двух языках
+    val categoriesRu = listOf(
+        "Супы", "Салаты", "Горячие блюда", "Закуски",
+        "Пицца / Лепёшки / Хлеб", "Бургеры и сэндвичи",
+        "Десерты", "Напитки", "Завтраки / Бранч",
+        "Вегетарианские / Веганские блюда", "Суши и роллы",
+        "Блюда на гриле / Барбекю", "Детское меню",
+        "Комбо / Наборы", "Другое"
+    )
+
+    val categoriesKz = listOf(
+        "Сорпалар", "Салаттар", "Ыстық тағамдар", "Тіскебасарлар",
+        "Пицца / Нан / Торт", "Бургерлер және сэндвичтер",
+        "Десерттер", "Сусындар", "Таңғы ас / Бранч",
+        "Вегетариандық / Вегандық тағамдар", "Суши және роллдар",
+        "Гриль / Барбекю тағамдары", "Балалар мәзірі",
+        "Комбо / Жиынтықтар", "Басқа"
+    )
+
+    fun getCategories(): List<String> = if (currentLanguage.value == Language.KAZAKH) categoriesKz else categoriesRu
+    val other: String get() = if (currentLanguage.value == Language.KAZAKH) "Басқа" else "Другое"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddDishScreen(
@@ -28,15 +90,9 @@ fun AddDishScreen(
 ) {
     val db = Firebase.firestore
     val dateAdded = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    val isKazakh = Strings.getLanguage() == Language.KAZAKH
 
-    val categories = listOf(
-        "Супы", "Салаты", "Горячие блюда", "Закуски",
-        "Пицца / Лепёшки / Хлеб", "Бургеры и сэндвичи",
-        "Десерты", "Напитки", "Завтраки / Бранч",
-        "Вегетарианские / Веганские блюда", "Суши и роллы",
-        "Блюда на гриле / Барбекю", "Детское меню",
-        "Комбо / Наборы", "Другое"
-    )
+    val categories = if (isKazakh) AddDishStrings.categoriesKz else AddDishStrings.categoriesRu
 
     var name by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
@@ -64,7 +120,7 @@ fun AddDishScreen(
     var error by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 
-    val filteredCategories = remember(category) {
+    val filteredCategories = remember(category, isKazakh) {
         if (!categorySelected && category.isNotBlank())
             categories.filter { it.contains(category, ignoreCase = true) }
         else emptyList()
@@ -75,10 +131,10 @@ fun AddDishScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Добавить блюдо", fontWeight = FontWeight.Bold) },
+                title = { Text(AddDishStrings.addDish, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.Default.ArrowBack, contentDescription = AddDishStrings.back)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -96,7 +152,7 @@ fun AddDishScreen(
         ) {
             item {
                 Text(
-                    "Основная информация",
+                    AddDishStrings.basicInfo,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -105,7 +161,7 @@ fun AddDishScreen(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Название блюда *") },
+                    label = { Text(AddDishStrings.dishName) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
                     isError = name.isBlank()
@@ -114,7 +170,7 @@ fun AddDishScreen(
                 OutlinedTextField(
                     value = price,
                     onValueChange = { price = it },
-                    label = { Text("Цена *") },
+                    label = { Text(AddDishStrings.price) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
@@ -128,7 +184,7 @@ fun AddDishScreen(
                             category = it
                             categorySelected = false
                         },
-                        label = { Text("Категория") },
+                        label = { Text(AddDishStrings.category) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.medium
                     )
@@ -149,7 +205,7 @@ fun AddDishScreen(
 
                     if (category.isNotBlank() && filteredCategories.isEmpty() && !categoryValid) {
                         Text(
-                            text = "Такой категории нет, будет сохранено как «Другое»",
+                            text = AddDishStrings.categoryNotFound,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 4.dp)
@@ -160,7 +216,7 @@ fun AddDishScreen(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Описание") },
+                    label = { Text(AddDishStrings.description) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                     shape = MaterialTheme.shapes.medium
@@ -169,7 +225,7 @@ fun AddDishScreen(
                 OutlinedTextField(
                     value = photoUrl,
                     onValueChange = { photoUrl = it },
-                    label = { Text("Ссылка на фото") },
+                    label = { Text(AddDishStrings.photoUrl) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium
                 )
@@ -177,7 +233,7 @@ fun AddDishScreen(
 
             item {
                 Text(
-                    "Характеристики",
+                    AddDishStrings.characteristics,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
@@ -186,7 +242,7 @@ fun AddDishScreen(
                 OutlinedTextField(
                     value = weightOrVolume,
                     onValueChange = { weightOrVolume = it },
-                    label = { Text("Вес / объём") },
+                    label = { Text(AddDishStrings.weightOrVolume) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium
                 )
@@ -194,7 +250,7 @@ fun AddDishScreen(
                 OutlinedTextField(
                     value = ingredients,
                     onValueChange = { ingredients = it },
-                    label = { Text("Ингредиенты") },
+                    label = { Text(AddDishStrings.ingredients) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
                     shape = MaterialTheme.shapes.medium
@@ -207,7 +263,7 @@ fun AddDishScreen(
                     OutlinedTextField(
                         value = calories,
                         onValueChange = { calories = it },
-                        label = { Text("Калории") },
+                        label = { Text(AddDishStrings.calories) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = MaterialTheme.shapes.medium
@@ -215,7 +271,7 @@ fun AddDishScreen(
                     OutlinedTextField(
                         value = cookingTime,
                         onValueChange = { cookingTime = it },
-                        label = { Text("Время (мин)") },
+                        label = { Text(AddDishStrings.cookingTime) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = MaterialTheme.shapes.medium
@@ -229,7 +285,7 @@ fun AddDishScreen(
                     OutlinedTextField(
                         value = proteins,
                         onValueChange = { proteins = it },
-                        label = { Text("Белки") },
+                        label = { Text(AddDishStrings.proteins) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = MaterialTheme.shapes.medium
@@ -237,7 +293,7 @@ fun AddDishScreen(
                     OutlinedTextField(
                         value = fats,
                         onValueChange = { fats = it },
-                        label = { Text("Жиры") },
+                        label = { Text(AddDishStrings.fats) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = MaterialTheme.shapes.medium
@@ -245,7 +301,7 @@ fun AddDishScreen(
                     OutlinedTextField(
                         value = carbs,
                         onValueChange = { carbs = it },
-                        label = { Text("Углеводы") },
+                        label = { Text(AddDishStrings.carbs) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = MaterialTheme.shapes.medium
@@ -255,7 +311,7 @@ fun AddDishScreen(
                 OutlinedTextField(
                     value = spiciness,
                     onValueChange = { spiciness = it },
-                    label = { Text("Острота (1-5)") },
+                    label = { Text(AddDishStrings.spiciness) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium
@@ -264,7 +320,7 @@ fun AddDishScreen(
                 OutlinedTextField(
                     value = allergens,
                     onValueChange = { allergens = it },
-                    label = { Text("Аллергены") },
+                    label = { Text(AddDishStrings.allergens) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium
                 )
@@ -272,7 +328,7 @@ fun AddDishScreen(
 
             item {
                 Text(
-                    "Дополнительно",
+                    AddDishStrings.additional,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
@@ -285,14 +341,14 @@ fun AddDishScreen(
                     OutlinedTextField(
                         value = addOns,
                         onValueChange = { addOns = it },
-                        label = { Text("Возможные добавки") },
+                        label = { Text(AddDishStrings.addOns) },
                         modifier = Modifier.weight(1f),
                         shape = MaterialTheme.shapes.medium
                     )
                     OutlinedTextField(
                         value = addOnsPrice,
                         onValueChange = { addOnsPrice = it },
-                        label = { Text("Цена добавок") },
+                        label = { Text(AddDishStrings.addOnsPrice) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = MaterialTheme.shapes.medium
@@ -306,7 +362,7 @@ fun AddDishScreen(
                     OutlinedTextField(
                         value = portions,
                         onValueChange = { portions = it },
-                        label = { Text("Количество порций") },
+                        label = { Text(AddDishStrings.portions) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = MaterialTheme.shapes.medium
@@ -314,7 +370,7 @@ fun AddDishScreen(
                     OutlinedTextField(
                         value = costPrice,
                         onValueChange = { costPrice = it },
-                        label = { Text("Себестоимость") },
+                        label = { Text(AddDishStrings.costPrice) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = MaterialTheme.shapes.medium
@@ -324,7 +380,7 @@ fun AddDishScreen(
                 OutlinedTextField(
                     value = discount,
                     onValueChange = { discount = it },
-                    label = { Text("Скидка (%)") },
+                    label = { Text(AddDishStrings.discount) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium
@@ -341,7 +397,7 @@ fun AddDishScreen(
                             checkedColor = Color(0xFF4CAF50)
                         )
                     )
-                    Text("Вегетарианское", modifier = Modifier.padding(start = 8.dp))
+                    Text(AddDishStrings.vegetarian, modifier = Modifier.padding(start = 8.dp))
 
                     Spacer(modifier = Modifier.width(24.dp))
 
@@ -352,7 +408,7 @@ fun AddDishScreen(
                             checkedColor = Color(0xFFFF9800)
                         )
                     )
-                    Text("Популярное", modifier = Modifier.padding(start = 8.dp))
+                    Text(AddDishStrings.popular, modifier = Modifier.padding(start = 8.dp))
 
                     Spacer(modifier = Modifier.width(24.dp))
 
@@ -363,7 +419,7 @@ fun AddDishScreen(
                             checkedColor = Color(0xFF2196F3)
                         )
                     )
-                    Text("Доступно", modifier = Modifier.padding(start = 8.dp))
+                    Text(AddDishStrings.available, modifier = Modifier.padding(start = 8.dp))
                 }
             }
 
@@ -381,14 +437,14 @@ fun AddDishScreen(
                 Button(
                     onClick = {
                         if (name.isBlank() || price.isBlank()) {
-                            error = "Заполните обязательные поля: название и цена"
+                            error = AddDishStrings.fillRequired
                             return@Button
                         }
 
                         isLoading = true
                         error = ""
 
-                        val finalCategory = if (categoryValid) category else "Другое"
+                        val finalCategory = if (categoryValid) category else AddDishStrings.other
 
                         val newDish = hashMapOf<String, Any>(
                             "name" to name,
@@ -427,7 +483,7 @@ fun AddDishScreen(
                             }
                             .addOnFailureListener { e ->
                                 isLoading = false
-                                error = "Ошибка сохранения: ${e.message}"
+                                error = AddDishStrings.saveError + e.message
                             }
                     },
                     modifier = Modifier
@@ -443,7 +499,7 @@ fun AddDishScreen(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Text("Сохранить блюдо", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text(AddDishStrings.saveDish, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
                 }
 

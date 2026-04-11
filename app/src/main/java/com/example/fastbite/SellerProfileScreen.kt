@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarHalf
 import androidx.compose.material.icons.outlined.Star
@@ -37,6 +38,46 @@ import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
+// Строки для SellerProfileScreen
+// Строки для SellerProfileScreen
+object SellerProfileStrings {
+    val unknown: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Белгісіз" else "Неизвестно"
+    val name: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Атауы" else "Название"
+    val icon: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Белгіше (URL)" else "Иконка (URL)"
+    val cover: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Мұқаба (URL)" else "Обложка (URL)"
+    val description: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Сипаттама" else "Описание"
+    val save: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Сақтау" else "Сохранить"
+    val cancel: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Бас тарту" else "Отмена"
+    val close: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жабу" else "Закрыть"
+    val categories: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Санаттар" else "Категории"
+    val all: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Барлығы" else "Все"
+    val allReviews: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Барлық пікірлер" else "Все отзывы"
+    val noReviews: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Әзірге пікірлер жоқ" else "Пока нет отзывов"
+    val reviewsCount: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "пікір" else "отзывов"
+    val price: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Бағасы" else "Цена"
+    val oldPrice: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Ескі баға" else "Старая цена"
+    val category: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Санат" else "Категория"
+    val weightOrVolume: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Салмағы/Көлемі" else "Вес/Объем"
+    val ingredients: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Құрамы" else "Ингредиенты"
+    val calories: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Калория" else "Калории"
+    val bju: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "АМК" else "БЖУ"
+    val cookingTime: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Дайындау уақыты" else "Время приготовления"
+    val spiciness: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Ащылығы" else "Острота"
+    val vegetarian: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Вегетариандық" else "Вегетарианское"
+    val available: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Қолжетімді" else "Доступно"
+    val yes: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Иә" else "Да"
+    val no: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жоқ" else "Нет"
+    val logout: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Шығу" else "Выход"
+    val logoutConfirm: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Сіз шынымен шыққыңыз келе ме?" else "Вы уверены, что хотите выйти?"
+    val exit: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Шығу" else "Выйти"
+    val settings: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Баптаулар" else "Настройки"
+    val language: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тіл" else "Язык"
+    val anonymous: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Аноним" else "Аноним"
+    val yourClientsCanLeaveReviews: String get() = if (Strings.currentLanguage.value == Language.KAZAKH)
+        "Сіздің клиенттеріңіз тапсырыстардан кейін пікір қалдыра алады" else
+        "Ваши клиенты смогут оставлять отзывы после заказов"
+}
+
 // ===== ВСПОМОГАТЕЛЬНЫЙ КЛАСС ДЛЯ ОТОБРАЖЕНИЯ =====
 data class DishWithReviews(
     val dish: Dish,
@@ -52,7 +93,7 @@ fun SellerProfileScreen(
 ) {
     val db = Firebase.firestore
 
-    var restaurantName by remember { mutableStateOf("Неизвестно") }
+    var restaurantName by remember { mutableStateOf(SellerProfileStrings.unknown) }
     var restaurantDescription by remember { mutableStateOf("") }
     var restaurantIcon by remember { mutableStateOf("") }
     var restaurantCover by remember { mutableStateOf("") }
@@ -62,17 +103,20 @@ fun SellerProfileScreen(
     var tempIcon by remember { mutableStateOf("") }
     var tempCover by remember { mutableStateOf("") }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
+    var currentLanguage by remember { mutableStateOf(Strings.getLanguage()) }
 
     var dishesWithReviews by remember { mutableStateOf<List<DishWithReviews>>(emptyList()) }
-    var selectedCategory by remember { mutableStateOf("Все") }
+    var selectedCategory by remember { mutableStateOf(SellerProfileStrings.all) }
     var selectedDish by remember { mutableStateOf<DishWithReviews?>(null) }
     var showReviews by remember { mutableStateOf(false) }
 
-    // 🔹 Загрузка данных ресторана
+    // Загрузка данных ресторана
     LaunchedEffect(currentUserEmail) {
         db.collection("restaurants").document(currentUserEmail).get()
             .addOnSuccessListener { doc ->
-                restaurantName = doc.getString("name") ?: "Неизвестно"
+                restaurantName = doc.getString("name") ?: SellerProfileStrings.unknown
                 restaurantDescription = doc.getString("description") ?: ""
                 restaurantIcon = doc.getString("iconUrl") ?: ""
                 restaurantCover = doc.getString("coverUrl") ?: ""
@@ -83,13 +127,12 @@ fun SellerProfileScreen(
                 tempCover = restaurantCover
             }
 
-        // 🔹 Загрузка блюд с отзывами
         loadDishesWithReviews(db, currentUserEmail) { loadedDishes ->
             dishesWithReviews = loadedDishes
         }
     }
 
-    // ⭐ Средний рейтинг ресторана и количество оценок
+    // Средний рейтинг ресторана
     val restaurantRating: Double
     val restaurantRatingCount: Long
 
@@ -103,27 +146,118 @@ fun SellerProfileScreen(
         restaurantRatingCount = 0L
     }
 
-    // 🔹 категории ТОЛЬКО из блюд + "Все"
-    val categories = listOf("Все") +
+    val categories = listOf(SellerProfileStrings.all) +
             dishesWithReviews.map { it.dish.category }
                 .filter { it.isNotBlank() }
                 .distinct()
 
     val filteredDishes =
-        if (selectedCategory == "Все") dishesWithReviews
+        if (selectedCategory == SellerProfileStrings.all) dishesWithReviews
         else dishesWithReviews.filter { it.dish.category == selectedCategory }
 
-    // 🔹 Все отзывы ресторана
     val allRestaurantReviews = remember(dishesWithReviews) {
         dishesWithReviews.flatMap { it.reviews }
+    }
+
+    // Диалог выбора языка
+    if (showLanguageDialog) {
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            title = { Text(SellerProfileStrings.language, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Language.values().forEach { language ->
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                currentLanguage = language
+                                Strings.setLanguage(language)
+                                showLanguageDialog = false
+                            },
+                            color = if (currentLanguage == language) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                        ) {
+                            Text(
+                                text = language.displayName,
+                                modifier = Modifier.padding(16.dp),
+                                color = if (currentLanguage == language) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLanguageDialog = false }) {
+                    Text(SellerProfileStrings.cancel)
+                }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
+    }
+
+    // Диалог настроек
+    if (showSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showSettingsDialog = false },
+            title = { Text(SellerProfileStrings.settings, fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showSettingsDialog = false
+                                showLanguageDialog = true
+                            },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                SellerProfileStrings.language,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    currentLanguage.displayName,
+                                    fontSize = 14.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                                Icon(
+                                    Icons.Default.ArrowBack,
+                                    null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSettingsDialog = false }) {
+                    Text(SellerProfileStrings.close)
+                }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
     ) {
-
-        // ===== ОБЛОЖКА =====
+        // Обложка
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -146,7 +280,7 @@ fun SellerProfileScreen(
                     .background(Color.Black.copy(alpha = 0.35f))
             )
 
-            // ===== ВЕРХ ЛЕВО: КНОПКА НАЗАД + АВАТАР =====
+            // Верх лево: кнопка назад + аватар
             Row(
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -185,7 +319,6 @@ fun SellerProfileScreen(
                         maxLines = 1
                     )
 
-                    // ⭐ Звёзды и средний рейтинг
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         val fullStars = restaurantRating.toInt()
                         val hasHalfStar = restaurantRating % 1 >= 0.5
@@ -225,12 +358,21 @@ fun SellerProfileScreen(
                 }
             }
 
-            // ===== ВЕРХ ПРАВО: ТОЛЬКО КНОПКИ РЕДАКТИРОВАНИЯ И ВЫХОДА =====
+            // Верх право: кнопки настроек, редактирования и выхода
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(12.dp)
             ) {
+                IconButton(
+                    onClick = { showSettingsDialog = true },
+                    modifier = Modifier.background(Color.Black.copy(0.4f), CircleShape)
+                ) {
+                    Icon(Icons.Default.Settings, null, tint = Color.White)
+                }
+
+                Spacer(Modifier.width(8.dp))
+
                 IconButton(
                     onClick = { isEditing = !isEditing },
                     modifier = Modifier.background(Color.Black.copy(0.4f), CircleShape)
@@ -249,14 +391,13 @@ fun SellerProfileScreen(
             }
         }
 
-        // ===== ОСНОВНОЙ КОНТЕНТ =====
+        // Основной контент
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
             item {
                 if (isEditing) {
                     Column(
@@ -265,25 +406,25 @@ fun SellerProfileScreen(
                         OutlinedTextField(
                             tempName,
                             { tempName = it },
-                            label = { Text("Название") },
+                            label = { Text(SellerProfileStrings.name) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             tempIcon,
                             { tempIcon = it },
-                            label = { Text("Иконка (URL)") },
+                            label = { Text(SellerProfileStrings.icon) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             tempCover,
                             { tempCover = it },
-                            label = { Text("Обложка (URL)") },
+                            label = { Text(SellerProfileStrings.cover) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             tempDescription,
                             { tempDescription = it },
-                            label = { Text("Описание") },
+                            label = { Text(SellerProfileStrings.description) },
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 3
                         )
@@ -310,7 +451,7 @@ fun SellerProfileScreen(
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text("Сохранить")
+                                Text(SellerProfileStrings.save)
                             }
 
                             Button(
@@ -320,7 +461,7 @@ fun SellerProfileScreen(
                                     containerColor = Color.Gray
                                 )
                             ) {
-                                Text("Отмена")
+                                Text(SellerProfileStrings.cancel)
                             }
                         }
                     }
@@ -336,12 +477,11 @@ fun SellerProfileScreen(
             }
 
             item {
-                // ===== КАТЕГОРИИ =====
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        "Категории",
+                        SellerProfileStrings.categories,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
@@ -371,7 +511,6 @@ fun SellerProfileScreen(
                 }
             }
 
-            // ===== БЛЮДА =====
             items(filteredDishes.size) { index ->
                 val dishWithReviews = filteredDishes[index]
                 DishCard(
@@ -382,7 +521,6 @@ fun SellerProfileScreen(
             }
 
             item {
-                // ===== КНОПКА "ВСЕ ОТЗЫВЫ" ВНИЗУ =====
                 if (allRestaurantReviews.isNotEmpty()) {
                     Card(
                         modifier = Modifier
@@ -403,13 +541,13 @@ fun SellerProfileScreen(
                         ) {
                             Column {
                                 Text(
-                                    "Все отзывы",
+                                    SellerProfileStrings.allReviews,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    "${allRestaurantReviews.size} отзывов",
+                                    "${allRestaurantReviews.size} ${SellerProfileStrings.reviewsCount}",
                                     fontSize = 14.sp,
                                     color = Color.Gray
                                 )
@@ -438,7 +576,7 @@ fun SellerProfileScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "Пока нет отзывов",
+                                SellerProfileStrings.noReviews,
                                 fontSize = 16.sp,
                                 color = Color.Gray,
                                 modifier = Modifier.weight(1f)
@@ -457,35 +595,36 @@ fun SellerProfileScreen(
             }
         }
     }
+
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
             title = {
-                Text("Выход")
+                Text(SellerProfileStrings.logout)
             },
             text = {
-                Text("Вы уверены, что хотите выйти?")
+                Text(SellerProfileStrings.logoutConfirm)
             },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showLogoutDialog = false
-                        onLogout() // Вызываем функцию выхода
+                        onLogout()
                     }
                 ) {
-                    Text("Выйти", color = Color.Red)
+                    Text(SellerProfileStrings.exit, color = Color.Red)
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { showLogoutDialog = false }
                 ) {
-                    Text("Отмена")
+                    Text(SellerProfileStrings.cancel)
                 }
             }
         )
     }
-    // ===== ДИАЛОГ ДЕТАЛЕЙ БЛЮДА (ПОЛНЫЙ ЭКРАН) =====
+
     if (selectedDish != null) {
         val dishWithReviews = selectedDish!!
         FullScreenDishDialog(
@@ -496,17 +635,12 @@ fun SellerProfileScreen(
             restaurantRatingCount = restaurantRatingCount,
             onClose = { selectedDish = null },
             onProfileClick = {
-                // Так как вы уже в профиле ресторана, можно:
-                // 1. Закрыть диалог
                 selectedDish = null
-                // 2. Показать редактирование профиля
                 isEditing = true
-                // 3. Или просто ничего не делать, если вы уже в профиле
             }
         )
     }
 
-    // ===== ДИАЛОГ ВСЕХ ОТЗЫВОВ РЕСТОРАНА =====
     if (showReviews) {
         FullScreenReviewsDialog(
             reviews = allRestaurantReviews,
@@ -562,13 +696,13 @@ fun DishCard(
                     if (discountPercentage > 0) {
                         Column {
                             Text(
-                                "Цена: ${"%.0f".format(discountedPrice)} тг",
+                                "${SellerProfileStrings.price}: ${"%.0f".format(discountedPrice)} тг",
                                 color = Color.Red,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp
                             )
                             Text(
-                                "Старая цена: ${"%.0f".format(originalPrice)} тг",
+                                "${SellerProfileStrings.oldPrice}: ${"%.0f".format(originalPrice)} тг",
                                 color = Color.Gray,
                                 fontSize = 12.sp,
                                 style = TextStyle(textDecoration = TextDecoration.LineThrough)
@@ -576,7 +710,7 @@ fun DishCard(
                         }
                     } else {
                         Text(
-                            "Цена: ${"%.0f".format(originalPrice)} тг",
+                            "${SellerProfileStrings.price}: ${"%.0f".format(originalPrice)} тг",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -595,7 +729,6 @@ fun DishCard(
 
             Spacer(Modifier.height(12.dp))
 
-            // Рейтинг блюда
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -634,22 +767,20 @@ fun DishCard(
                     color = Color.Gray
                 )
 
-                // Количество отзывов
                 if (reviews.isNotEmpty()) {
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "${reviews.size} отзывов",
+                        "${reviews.size} ${SellerProfileStrings.reviewsCount}",
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
                 }
             }
-            // УБРАЛИ ПРОФИЛЬ РЕСТОРАНА ИЗ КАРТОЧКИ
         }
     }
 }
 
-// ===== ДИАЛОГ ДЕТАЛЕЙ БЛЮДА (ПОЛНЫЙ ЭКРАН) =====
+// ===== ДИАЛОГ ДЕТАЛЕЙ БЛЮДА =====
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FullScreenDishDialog(
@@ -659,7 +790,7 @@ fun FullScreenDishDialog(
     restaurantRating: Double,
     restaurantRatingCount: Long,
     onClose: () -> Unit,
-    onProfileClick: () -> Unit // ДОБАВЛЕНО
+    onProfileClick: () -> Unit
 ) {
     val dish = dishWithReviews.dish
     val reviews = dishWithReviews.reviews
@@ -675,7 +806,6 @@ fun FullScreenDishDialog(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Шапка с кнопкой назад
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -696,16 +826,13 @@ fun FullScreenDishDialog(
                     )
                 }
 
-                // Контент
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-
                     item {
-                        // Фото блюда
                         AsyncImage(
                             model = dish.photoUrl.ifEmpty { "https://via.placeholder.com/200" },
                             contentDescription = dish.name,
@@ -718,7 +845,6 @@ fun FullScreenDishDialog(
                     }
 
                     item {
-                        // Цена со скидкой
                         val discountPercentage = dish.discount.toDoubleOrNull() ?: 0.0
                         val originalPrice = dish.price.toDoubleOrNull() ?: 0.0
                         val discountedPrice = if (discountPercentage > 0)
@@ -728,13 +854,13 @@ fun FullScreenDishDialog(
                         if (discountPercentage > 0) {
                             Column {
                                 Text(
-                                    "Цена: ${"%.0f".format(discountedPrice)} тг",
+                                    "${SellerProfileStrings.price}: ${"%.0f".format(discountedPrice)} тг",
                                     color = Color.Red,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 24.sp
                                 )
                                 Text(
-                                    "Старая цена: ${"%.0f".format(originalPrice)} тг",
+                                    "${SellerProfileStrings.oldPrice}: ${"%.0f".format(originalPrice)} тг",
                                     color = Color.Gray,
                                     fontSize = 16.sp,
                                     style = TextStyle(textDecoration = TextDecoration.LineThrough)
@@ -742,7 +868,7 @@ fun FullScreenDishDialog(
                             }
                         } else {
                             Text(
-                                "Цена: ${"%.0f".format(originalPrice)} тг",
+                                "${SellerProfileStrings.price}: ${"%.0f".format(originalPrice)} тг",
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -750,7 +876,6 @@ fun FullScreenDishDialog(
                     }
 
                     item {
-                        // Рейтинг блюда
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
@@ -783,18 +908,17 @@ fun FullScreenDishDialog(
                             }
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                "%.1f (%d отзывов)".format(dish.ratingAverage, dish.ratingCount),
+                                "%.1f (%d ${SellerProfileStrings.reviewsCount})".format(dish.ratingAverage, dish.ratingCount),
                                 fontSize = 16.sp
                             )
                         }
                     }
 
-                    // Детали блюда
                     if (dish.description.isNotBlank()) {
                         item {
                             Column {
                                 Text(
-                                    "Описание",
+                                    SellerProfileStrings.description,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 18.sp
                                 )
@@ -805,13 +929,13 @@ fun FullScreenDishDialog(
 
                     if (dish.category.isNotBlank()) {
                         item {
-                            Text("Категория: ${dish.category}", fontSize = 16.sp)
+                            Text("${SellerProfileStrings.category}: ${dish.category}", fontSize = 16.sp)
                         }
                     }
 
                     if (dish.weightOrVolume.isNotBlank()) {
                         item {
-                            Text("Вес/Объем: ${dish.weightOrVolume}", fontSize = 16.sp)
+                            Text("${SellerProfileStrings.weightOrVolume}: ${dish.weightOrVolume}", fontSize = 16.sp)
                         }
                     }
 
@@ -819,7 +943,7 @@ fun FullScreenDishDialog(
                         item {
                             Column {
                                 Text(
-                                    "Ингредиенты",
+                                    SellerProfileStrings.ingredients,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 18.sp
                                 )
@@ -830,34 +954,33 @@ fun FullScreenDishDialog(
 
                     if (dish.calories.isNotBlank()) {
                         item {
-                            Text("Калории: ${dish.calories}", fontSize = 16.sp)
+                            Text("${SellerProfileStrings.calories}: ${dish.calories}", fontSize = 16.sp)
                         }
                     }
 
                     if (dish.proteins.isNotBlank() || dish.fats.isNotBlank() || dish.carbs.isNotBlank()) {
                         item {
-                            Text("БЖУ: ${dish.proteins} б / ${dish.fats} ж / ${dish.carbs} у", fontSize = 16.sp)
+                            Text("${SellerProfileStrings.bju}: ${dish.proteins} б / ${dish.fats} ж / ${dish.carbs} у", fontSize = 16.sp)
                         }
                     }
 
                     if (dish.cookingTime.isNotBlank()) {
                         item {
-                            Text("Время приготовления: ${dish.cookingTime}", fontSize = 16.sp)
+                            Text("${SellerProfileStrings.cookingTime}: ${dish.cookingTime}", fontSize = 16.sp)
                         }
                     }
 
                     if (dish.spiciness.isNotBlank()) {
                         item {
-                            Text("Острота: ${dish.spiciness}", fontSize = 16.sp)
+                            Text("${SellerProfileStrings.spiciness}: ${dish.spiciness}", fontSize = 16.sp)
                         }
                     }
 
                     item {
-                        Text("Вегетарианское: ${if (dish.vegetarian) "Да" else "Нет"}", fontSize = 16.sp)
-                        Text("Доступно: ${if (dish.availability) "Да" else "Нет"}", fontSize = 16.sp)
+                        Text("${SellerProfileStrings.vegetarian}: ${if (dish.vegetarian) SellerProfileStrings.yes else SellerProfileStrings.no}", fontSize = 16.sp)
+                        Text("${SellerProfileStrings.available}: ${if (dish.availability) SellerProfileStrings.yes else SellerProfileStrings.no}", fontSize = 16.sp)
                     }
 
-                    // ✅ ПРОФИЛЬ РЕСТОРАНА ПЕРЕД ОТЗЫВАМИ (как в SellerMenuScreen)
                     item {
                         Spacer(Modifier.height(16.dp))
                         Card(
@@ -909,7 +1032,6 @@ fun FullScreenDishDialog(
 
                                     Spacer(Modifier.height(4.dp))
 
-                                    // ✅ РЕЙТИНГ РЕСТОРАНА КАК В ПРОФИЛЕ
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
@@ -942,7 +1064,6 @@ fun FullScreenDishDialog(
                                         }
 
                                         Spacer(Modifier.width(4.dp))
-                                        // ✅ Форматирование как в профиле: "рейтинг (количество)"
                                         Text(
                                             "%.1f (%d)".format(restaurantRating, restaurantRatingCount),
                                             fontSize = 12.sp,
@@ -955,12 +1076,11 @@ fun FullScreenDishDialog(
                         Spacer(Modifier.height(16.dp))
                     }
 
-                    // ===== ОТЗЫВЫ БЛЮДА =====
                     if (reviews.isNotEmpty()) {
                         item {
                             Column {
                                 Text(
-                                    "Отзывы (${reviews.size})",
+                                    "${SellerProfileStrings.allReviews} (${reviews.size})",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(top = 16.dp)
@@ -977,7 +1097,7 @@ fun FullScreenDishDialog(
                     } else {
                         item {
                             Text(
-                                "Пока нет отзывов",
+                                SellerProfileStrings.noReviews,
                                 fontSize = 16.sp,
                                 color = Color.Gray,
                                 modifier = Modifier.padding(vertical = 24.dp)
@@ -994,7 +1114,7 @@ fun FullScreenDishDialog(
     }
 }
 
-// ===== ДИАЛОГ ВСЕХ ОТЗЫВОВ РЕСТОРАНА =====
+// ===== ДИАЛОГ ВСЕХ ОТЗЫВОВ =====
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FullScreenReviewsDialog(
@@ -1013,7 +1133,6 @@ fun FullScreenReviewsDialog(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Шапка
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1028,7 +1147,7 @@ fun FullScreenReviewsDialog(
 
                     Column {
                         Text(
-                            "Все отзывы",
+                            SellerProfileStrings.allReviews,
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp
                         )
@@ -1040,7 +1159,6 @@ fun FullScreenReviewsDialog(
                     }
                 }
 
-                // Список отзывов
                 if (reviews.isEmpty()) {
                     Column(
                         modifier = Modifier
@@ -1055,12 +1173,12 @@ fun FullScreenReviewsDialog(
                         )
                         Spacer(Modifier.height(16.dp))
                         Text(
-                            "Пока нет отзывов",
+                            SellerProfileStrings.noReviews,
                             fontSize = 18.sp,
                             color = Color.Gray
                         )
                         Text(
-                            "Ваши клиенты смогут оставлять отзывы после заказов",
+                            SellerProfileStrings.yourClientsCanLeaveReviews,
                             fontSize = 14.sp,
                             color = Color.Gray,
                             textAlign = TextAlign.Center,
@@ -1099,7 +1217,6 @@ fun ReviewCard(review: Review) {
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Заголовок отзыва
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1107,7 +1224,7 @@ fun ReviewCard(review: Review) {
             ) {
                 Column {
                     Text(
-                        review.userName.ifEmpty { "Аноним" },
+                        review.userName.ifEmpty { SellerProfileStrings.anonymous },
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
@@ -1120,7 +1237,6 @@ fun ReviewCard(review: Review) {
                     }
                 }
 
-                // Звёзды рейтинга
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val fullStars = review.rating.toInt()
                     val hasHalfStar = review.rating % 1 >= 0.5
@@ -1153,7 +1269,6 @@ fun ReviewCard(review: Review) {
 
             Spacer(Modifier.height(8.dp))
 
-            // Текст отзыва
             if (review.comment.isNotBlank()) {
                 Text(
                     review.comment,
@@ -1166,8 +1281,6 @@ fun ReviewCard(review: Review) {
 }
 
 // ===== ФУНКЦИЯ ЗАГРУЗКИ БЛЮД С ОТЗЫВАМИ =====
-// Замените существующую функцию loadDishesWithReviews на эту:
-
 fun loadDishesWithReviews(
     db: com.google.firebase.firestore.FirebaseFirestore,
     ownerEmail: String,
@@ -1211,7 +1324,6 @@ fun loadDishesWithReviews(
                     availability = dishDoc.getBoolean("availability") ?: true
                 )
 
-                // Загружаем отзывы из подколлекции
                 db.collection("dishes")
                     .document(dishDoc.id)
                     .collection("reviews")
@@ -1221,7 +1333,7 @@ fun loadDishesWithReviews(
                         val reviews = reviewResult.documents.map { reviewDoc ->
                             Review(
                                 id = reviewDoc.id,
-                                userName = reviewDoc.getString("userName") ?: "Аноним",
+                                userName = reviewDoc.getString("userName") ?: SellerProfileStrings.anonymous,
                                 userEmail = reviewDoc.getString("userEmail") ?: "",
                                 rating = reviewDoc.getDouble("rating") ?: 0.0,
                                 comment = reviewDoc.getString("comment") ?: "",

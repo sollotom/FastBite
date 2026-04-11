@@ -25,6 +25,37 @@ import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.*
 
+// Строки для SellerOrdersScreen
+object SellerOrdersStrings {
+    val orders: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тапсырыстар" else "Заказы"
+    val all: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Барлығы" else "Все"
+    val noOrders: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тапсырыстар жоқ" else "Нет заказов"
+    val orderNumber: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тапсырыс №" else "Заказ #"
+    val client: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Клиент" else "Клиент"
+    val phone: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Телефон" else "Телефон"
+    val address: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Мекенжай" else "Адрес"
+    val total: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Барлығы" else "Итого"
+    val time: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Уақыт" else "Время"
+    val orderDetails: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тапсырыс мәліметтері" else "Детали заказа"
+    val deliveryAddress: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жеткізу мекенжайы" else "Адрес доставки"
+    val payment: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Төлем" else "Оплата"
+    val comment: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Түсініктеме" else "Комментарий"
+    val orderComposition: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тапсырыс құрамы" else "Состав заказа"
+    val currentStatus: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Ағымдағы күй" else "Текущий статус"
+    val changeStatus: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Күйді өзгерту" else "Изменить статус"
+    val close: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жабу" else "Закрыть"
+    val selectNewStatus: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жаңа күйді таңдаңыз" else "Выберите новый статус"
+    val cancel: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Бас тарту" else "Отмена"
+    val name: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Аты" else "Имя"
+    val apt: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Пәтер" else "Кв."
+    val entranceShort: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Кіреберіс" else "Подъезд"
+    val floorShort: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Қабат" else "Этаж"
+    val intercomShort: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Домофон" else "Домофон"
+    val cash: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Қолма-қол ақша" else "Наличными"
+    val card: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Карта" else "Карта"
+    val withoutName: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Атаусыз" else "Без названия"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SellerOrdersScreen() {
@@ -61,7 +92,7 @@ fun SellerOrdersScreen() {
                                         allItems.add(
                                             OrderItem(
                                                 dishId = item["dishId"] as? String ?: "",
-                                                dishName = item["dishName"] as? String ?: "Без названия",
+                                                dishName = item["dishName"] as? String ?: SellerOrdersStrings.withoutName,
                                                 quantity = (item["quantity"] as? Long)?.toInt() ?: 1,
                                                 price = (item["price"] as? Double) ?: 0.0,
                                                 totalPrice = (item["totalPrice"] as? Double) ?: 0.0,
@@ -96,7 +127,7 @@ fun SellerOrdersScreen() {
                                     floor = doc.getString("deliveryAddress.floor") ?: "",
                                     intercom = doc.getString("deliveryAddress.intercom") ?: ""
                                 ),
-                                paymentMethod = doc.getString("paymentMethod") ?: "Наличными",
+                                paymentMethod = doc.getString("paymentMethod") ?: SellerOrdersStrings.cash,
                                 comment = doc.getString("comment") ?: ""
                             )
                             loadedOrders.add(order)
@@ -114,13 +145,14 @@ fun SellerOrdersScreen() {
     val filteredOrders = if (selectedStatus == null) orders else orders.filter { it.status == selectedStatus }
 
     val ordersByDate = filteredOrders.groupBy { order ->
-        SimpleDateFormat("dd MMMM yyyy", Locale("ru")).format(order.createdAt)
+        val locale = if (Strings.currentLanguage.value == Language.KAZAKH) Locale("kk") else Locale("ru")
+        SimpleDateFormat("dd MMMM yyyy", locale).format(order.createdAt)
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Заказы", fontWeight = FontWeight.Bold) },
+                title = { Text(SellerOrdersStrings.orders, fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
@@ -142,13 +174,13 @@ fun SellerOrdersScreen() {
                 FilterChip(
                     selected = selectedStatus == null,
                     onClick = { selectedStatus = null },
-                    label = { Text("Все") }
+                    label = { Text(SellerOrdersStrings.all) }
                 )
                 OrderStatus.values().forEach { status ->
                     FilterChip(
                         selected = selectedStatus == status,
                         onClick = { selectedStatus = status },
-                        label = { Text(status.displayName) }
+                        label = { Text(status.localizedName()) }
                     )
                 }
             }
@@ -162,7 +194,7 @@ fun SellerOrdersScreen() {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.ShoppingCart, null, modifier = Modifier.size(64.dp), tint = Color.Gray)
                         Spacer(Modifier.height(16.dp))
-                        Text("Нет заказов", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                        Text(SellerOrdersStrings.noOrders, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
                     }
                 }
             } else {
@@ -232,16 +264,16 @@ fun SellerOrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Заказ #${order.id.takeLast(6)}",
+                    "${SellerOrdersStrings.orderNumber}${order.id.takeLast(6)}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
                 OrderStatusChip(status = order.status)
             }
 
-            Text("Клиент: ${order.userName}", fontSize = 14.sp)
-            Text("Телефон: ${order.userPhone}", fontSize = 14.sp)
-            Text("Адрес: ${order.deliveryAddress.address}", fontSize = 14.sp, maxLines = 1)
+            Text("${SellerOrdersStrings.client}: ${order.userName}", fontSize = 14.sp)
+            Text("${SellerOrdersStrings.phone}: ${order.userPhone}", fontSize = 14.sp)
+            Text("${SellerOrdersStrings.address}: ${order.deliveryAddress.address}", fontSize = 14.sp, maxLines = 1)
 
             Divider()
 
@@ -268,7 +300,7 @@ fun SellerOrderCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Итого:", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("${SellerOrdersStrings.total}:", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(
                     "${"%.0f".format(order.totalAmount)} тг",
                     fontWeight = FontWeight.Bold,
@@ -278,7 +310,7 @@ fun SellerOrderCard(
             }
 
             Text(
-                "Время: ${SimpleDateFormat("HH:mm", Locale("ru")).format(order.createdAt)}",
+                "${SellerOrdersStrings.time}: ${SimpleDateFormat("HH:mm", Locale("ru")).format(order.createdAt)}",
                 fontSize = 12.sp,
                 color = Color.Gray
             )
@@ -311,7 +343,7 @@ fun SellerOrderDetailsDialog(
                 ) {
                     item {
                         Text(
-                            "Детали заказа #${order.id.takeLast(6)}",
+                            "${SellerOrdersStrings.orderDetails} #${order.id.takeLast(6)}",
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp
                         )
@@ -320,21 +352,21 @@ fun SellerOrderDetailsDialog(
                     item { Divider() }
 
                     item {
-                        Text("Клиент", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("Имя: ${order.userName}")
-                        Text("Телефон: ${order.userPhone}")
+                        Text(SellerOrdersStrings.client, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("${SellerOrdersStrings.name}: ${order.userName}")
+                        Text("${SellerOrdersStrings.phone}: ${order.userPhone}")
                         Text("Email: ${order.userId}")
                     }
 
                     item {
-                        Text("Адрес доставки", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(SellerOrdersStrings.deliveryAddress, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         Text(order.deliveryAddress.address)
 
                         val addressDetails = listOfNotNull(
-                            order.deliveryAddress.apartment.takeIf { it.isNotBlank() }?.let { "Кв. $it" },
-                            order.deliveryAddress.entrance.takeIf { it.isNotBlank() }?.let { "Подъезд $it" },
-                            order.deliveryAddress.floor.takeIf { it.isNotBlank() }?.let { "Этаж $it" },
-                            order.deliveryAddress.intercom.takeIf { it.isNotBlank() }?.let { "Домофон $it" }
+                            order.deliveryAddress.apartment.takeIf { it.isNotBlank() }?.let { "${SellerOrdersStrings.apt} $it" },
+                            order.deliveryAddress.entrance.takeIf { it.isNotBlank() }?.let { "${SellerOrdersStrings.entranceShort} $it" },
+                            order.deliveryAddress.floor.takeIf { it.isNotBlank() }?.let { "${SellerOrdersStrings.floorShort} $it" },
+                            order.deliveryAddress.intercom.takeIf { it.isNotBlank() }?.let { "${SellerOrdersStrings.intercomShort} $it" }
                         ).joinToString(", ")
 
                         if (addressDetails.isNotBlank()) {
@@ -343,18 +375,18 @@ fun SellerOrderDetailsDialog(
                     }
 
                     item {
-                        Text("Оплата: ${order.paymentMethod}", fontSize = 14.sp)
+                        Text("${SellerOrdersStrings.payment}: ${order.paymentMethod}", fontSize = 14.sp)
                     }
 
                     if (order.comment.isNotBlank()) {
                         item {
-                            Text("Комментарий", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text(SellerOrdersStrings.comment, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             Text(order.comment, fontSize = 14.sp)
                         }
                     }
 
                     item {
-                        Text("Состав заказа", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(SellerOrdersStrings.orderComposition, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
 
                     items(order.items) { item ->
@@ -374,7 +406,7 @@ fun SellerOrderDetailsDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Итого:", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            Text("${SellerOrdersStrings.total}:", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                             Text(
                                 "${"%.0f".format(order.totalAmount)} тг",
                                 fontWeight = FontWeight.Bold,
@@ -385,7 +417,7 @@ fun SellerOrderDetailsDialog(
                     }
 
                     item {
-                        Text("Текущий статус", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(SellerOrdersStrings.currentStatus, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
 
                     item {
@@ -403,7 +435,7 @@ fun SellerOrderDetailsDialog(
                                         containerColor = MaterialTheme.colorScheme.primary
                                     )
                                 ) {
-                                    Text("Изменить статус")
+                                    Text(SellerOrdersStrings.changeStatus)
                                 }
                             }
                         }
@@ -417,7 +449,7 @@ fun SellerOrderDetailsDialog(
                         .padding(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
                 ) {
-                    Text("Закрыть")
+                    Text(SellerOrdersStrings.close)
                 }
             }
         }
@@ -426,13 +458,13 @@ fun SellerOrderDetailsDialog(
     if (showStatusDialog) {
         AlertDialog(
             onDismissRequest = { showStatusDialog = false },
-            title = { Text("Изменить статус заказа", fontWeight = FontWeight.Bold) },
+            title = { Text(SellerOrdersStrings.changeStatus, fontWeight = FontWeight.Bold) },
             text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Выберите новый статус:", fontSize = 14.sp)
+                    Text(SellerOrdersStrings.selectNewStatus, fontSize = 14.sp)
 
                     val availableStatuses = OrderStatus.values().filter {
                         it != order.status && it != OrderStatus.CANCELLED
@@ -467,7 +499,7 @@ fun SellerOrderDetailsDialog(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    status.displayName,
+                                    status.localizedName(),
                                     fontWeight = FontWeight.Medium,
                                     color = when (status) {
                                         OrderStatus.DELIVERED -> Color(0xFF4CAF50)
@@ -495,7 +527,7 @@ fun SellerOrderDetailsDialog(
             },
             confirmButton = {
                 TextButton(onClick = { showStatusDialog = false }) {
-                    Text("Отмена")
+                    Text(SellerOrdersStrings.cancel)
                 }
             },
             shape = RoundedCornerShape(28.dp)
@@ -511,7 +543,7 @@ fun OrderStatusChip(status: OrderStatus) {
         modifier = Modifier.wrapContentSize()
     ) {
         Text(
-            status.displayName,
+            status.localizedName(),
             color = Color.White,
             fontSize = 12.sp,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)

@@ -13,6 +13,14 @@ object ReviewManager {
         return SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date())
     }
 
+    // Строки ошибок
+    private val addReviewError: String get() = if (Strings.currentLanguage.value == Language.KAZAKH)
+        "Пікір қосу кезінде қате: " else "Ошибка при добавлении отзыва: "
+    private val updateReviewError: String get() = if (Strings.currentLanguage.value == Language.KAZAKH)
+        "Пікірді жаңарту кезінде қате: " else "Ошибка при обновлении отзыва: "
+    private val anonymous: String get() = if (Strings.currentLanguage.value == Language.KAZAKH)
+        "Аноним" else "Аноним"
+
     suspend fun addReview(
         dishId: String,
         userEmail: String,
@@ -48,7 +56,7 @@ object ReviewManager {
 
             onSuccess()
         } catch (e: Exception) {
-            onError("Ошибка при добавлении отзыва: ${e.message}")
+            onError(addReviewError + e.message)
         }
     }
 
@@ -78,7 +86,7 @@ object ReviewManager {
 
             onSuccess()
         } catch (e: Exception) {
-            onError("Ошибка при обновлении отзыва: ${e.message}")
+            onError(updateReviewError + e.message)
         }
     }
 
@@ -152,7 +160,7 @@ object ReviewManager {
             snapshot.documents.mapNotNull { doc ->
                 Review(
                     id = doc.id,
-                    userName = doc.getString("userName") ?: "Аноним",
+                    userName = doc.getString("userName") ?: anonymous,
                     userEmail = doc.getString("userEmail") ?: "",
                     rating = doc.getDouble("rating") ?: 0.0,
                     comment = doc.getString("comment") ?: "",

@@ -19,6 +19,37 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 
+// Строки для экрана корзины
+object CartStrings {
+    var currentLanguage = Strings.currentLanguage
+
+    val cart: String get() = if (currentLanguage.value == Language.KAZAKH) "Себет" else "Корзина"
+    val back: String get() = if (currentLanguage.value == Language.KAZAKH) "Артқа" else "Назад"
+    val total: String get() = if (currentLanguage.value == Language.KAZAKH) "Барлығы" else "Итого"
+    val checkout: String get() = if (currentLanguage.value == Language.KAZAKH) "Тапсырыс беру" else "Оформить заказ"
+    val emptyCart: String get() = if (currentLanguage.value == Language.KAZAKH) "Себет бос" else "Корзина пуста"
+    val addItemsFromMenu: String get() = if (currentLanguage.value == Language.KAZAKH) "Мәзірден тауарлар қосыңыз" else "Добавьте товары из меню"
+    val goToMenu: String get() = if (currentLanguage.value == Language.KAZAKH) "Мәзірге өту" else "Перейти в меню"
+    val decrease: String get() = if (currentLanguage.value == Language.KAZAKH) "Азайту" else "Уменьшить"
+    val increase: String get() = if (currentLanguage.value == Language.KAZAKH) "Көбейту" else "Увеличить"
+
+    fun getItemsWord(count: Int): String {
+        return if (currentLanguage.value == Language.KAZAKH) {
+            when {
+                count % 10 == 1 && count % 100 != 11 -> "тауар"
+                count % 10 in 2..4 && count % 100 !in 12..14 -> "тауар"
+                else -> "тауар"
+            }
+        } else {
+            when {
+                count % 10 == 1 && count % 100 != 11 -> "товар"
+                count % 10 in 2..4 && count % 100 !in 12..14 -> "товара"
+                else -> "товаров"
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
@@ -34,14 +65,14 @@ fun CartScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Корзина",
+                        text = CartStrings.cart,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateToMenu) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.Default.ArrowBack, contentDescription = CartStrings.back)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -67,12 +98,12 @@ fun CartScreen(
                     ) {
                         Column {
                             Text(
-                                text = "Итого: ${"%.0f".format(totalPrice)} тг",
+                                text = "${CartStrings.total}: ${"%.0f".format(totalPrice)} тг",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "$totalItems ${getItemsWord(totalItems)}",
+                                text = "$totalItems ${CartStrings.getItemsWord(totalItems)}",
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
@@ -85,7 +116,7 @@ fun CartScreen(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(
-                                text = "Оформить заказ",
+                                text = CartStrings.checkout,
                                 fontSize = 16.sp
                             )
                         }
@@ -104,20 +135,20 @@ fun CartScreen(
             ) {
                 Icon(
                     Icons.Default.ShoppingCart,
-                    contentDescription = "Пустая корзина",
+                    contentDescription = CartStrings.emptyCart,
                     modifier = Modifier.size(80.dp),
                     tint = Color.Gray
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "Корзина пуста",
+                    text = CartStrings.emptyCart,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Gray
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Добавьте товары из меню",
+                    text = CartStrings.addItemsFromMenu,
                     fontSize = 16.sp,
                     color = Color.Gray
                 )
@@ -127,7 +158,7 @@ fun CartScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "Перейти в меню"
+                        text = CartStrings.goToMenu
                     )
                 }
             }
@@ -240,7 +271,7 @@ fun CartItemCard(cartItem: CartItem) {
                     ) {
                         Icon(
                             Icons.Default.Remove,
-                            contentDescription = "Уменьшить",
+                            contentDescription = CartStrings.decrease,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -262,7 +293,7 @@ fun CartItemCard(cartItem: CartItem) {
                     ) {
                         Icon(
                             Icons.Default.Add,
-                            contentDescription = "Увеличить",
+                            contentDescription = CartStrings.increase,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -278,13 +309,5 @@ fun CartItemCard(cartItem: CartItem) {
                 )
             }
         }
-    }
-}
-
-private fun getItemsWord(count: Int): String {
-    return when {
-        count % 10 == 1 && count % 100 != 11 -> "товар"
-        count % 10 in 2..4 && count % 100 !in 12..14 -> "товара"
-        else -> "товаров"
     }
 }

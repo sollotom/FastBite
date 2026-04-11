@@ -10,6 +10,39 @@ import androidx.compose.ui.unit.dp
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
+// Строки для диалога редактирования блюда
+object EditDishStrings {
+    var currentLanguage = Strings.currentLanguage
+
+    val editDish: String get() = if (currentLanguage.value == Language.KAZAKH) "Тағамды өңдеу" else "Редактировать блюдо"
+    val name: String get() = if (currentLanguage.value == Language.KAZAKH) "Атауы" else "Название"
+    val price: String get() = if (currentLanguage.value == Language.KAZAKH) "Бағасы" else "Цена"
+    val description: String get() = if (currentLanguage.value == Language.KAZAKH) "Сипаттама" else "Описание"
+    val photoUrl: String get() = if (currentLanguage.value == Language.KAZAKH) "Фото сілтемесі" else "Ссылка на фото"
+    val category: String get() = if (currentLanguage.value == Language.KAZAKH) "Санат" else "Категория"
+    val weightOrVolume: String get() = if (currentLanguage.value == Language.KAZAKH) "Салмағы/Көлемі" else "Вес/Объём"
+    val ingredients: String get() = if (currentLanguage.value == Language.KAZAKH) "Құрамы" else "Ингредиенты"
+    val calories: String get() = if (currentLanguage.value == Language.KAZAKH) "Калория" else "Калории"
+    val proteins: String get() = if (currentLanguage.value == Language.KAZAKH) "Ақуыздар" else "Белки"
+    val fats: String get() = if (currentLanguage.value == Language.KAZAKH) "Майлар" else "Жиры"
+    val carbs: String get() = if (currentLanguage.value == Language.KAZAKH) "Көмірсулар" else "Углеводы"
+    val cookingTime: String get() = if (currentLanguage.value == Language.KAZAKH) "Дайындау уақыты" else "Время приготовления"
+    val spiciness: String get() = if (currentLanguage.value == Language.KAZAKH) "Ащылығы" else "Острота"
+    val vegetarian: String get() = if (currentLanguage.value == Language.KAZAKH) "Вегетариандық" else "Вегетарианское"
+    val allergens: String get() = if (currentLanguage.value == Language.KAZAKH) "Аллергендер" else "Аллергены"
+    val addOns: String get() = if (currentLanguage.value == Language.KAZAKH) "Қоспалар" else "Добавки"
+    val addOnsPrice: String get() = if (currentLanguage.value == Language.KAZAKH) "Қоспалар бағасы" else "Цена добавок"
+    val available: String get() = if (currentLanguage.value == Language.KAZAKH) "Қолжетімді" else "Доступно"
+    val rating: String get() = if (currentLanguage.value == Language.KAZAKH) "Рейтинг" else "Рейтинг"
+    val portions: String get() = if (currentLanguage.value == Language.KAZAKH) "Порциялар" else "Порции"
+    val costPrice: String get() = if (currentLanguage.value == Language.KAZAKH) "Өзіндік құны" else "Себестоимость"
+    val discount: String get() = if (currentLanguage.value == Language.KAZAKH) "Жеңілдік" else "Скидка"
+    val popularDish: String get() = if (currentLanguage.value == Language.KAZAKH) "Танымал тағам" else "Популярное блюдо"
+    val save: String get() = if (currentLanguage.value == Language.KAZAKH) "Сақтау" else "Сохранить"
+    val cancel: String get() = if (currentLanguage.value == Language.KAZAKH) "Бас тарту" else "Отмена"
+    val fillRequired: String get() = if (currentLanguage.value == Language.KAZAKH) "Міндетті өрістерді толтырыңыз" else "Заполните обязательные поля"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditDishDialog(
@@ -50,7 +83,7 @@ fun EditDishDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Редактировать блюдо") },
+        title = { Text(EditDishStrings.editDish) },
         text = {
             Column(
                 modifier = Modifier
@@ -59,42 +92,42 @@ fun EditDishDialog(
                     .padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Название") })
-                OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text("Цена") })
-                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Описание") })
-                OutlinedTextField(value = photoUrl, onValueChange = { photoUrl = it }, label = { Text("Ссылка на фото") })
-                OutlinedTextField(value = category, onValueChange = { category = it }, label = { Text("Категория") })
-                OutlinedTextField(value = weightOrVolume, onValueChange = { weightOrVolume = it }, label = { Text("Вес/Объём") })
-                OutlinedTextField(value = ingredients, onValueChange = { ingredients = it }, label = { Text("Ингредиенты") })
-                OutlinedTextField(value = calories, onValueChange = { calories = it }, label = { Text("Калории") })
-                OutlinedTextField(value = proteins, onValueChange = { proteins = it }, label = { Text("Белки") })
-                OutlinedTextField(value = fats, onValueChange = { fats = it }, label = { Text("Жиры") })
-                OutlinedTextField(value = carbs, onValueChange = { carbs = it }, label = { Text("Углеводы") })
-                OutlinedTextField(value = cookingTime, onValueChange = { cookingTime = it }, label = { Text("Время приготовления") })
-                OutlinedTextField(value = spiciness, onValueChange = { spiciness = it }, label = { Text("Острота") })
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(EditDishStrings.name) })
+                OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text(EditDishStrings.price) })
+                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text(EditDishStrings.description) })
+                OutlinedTextField(value = photoUrl, onValueChange = { photoUrl = it }, label = { Text(EditDishStrings.photoUrl) })
+                OutlinedTextField(value = category, onValueChange = { category = it }, label = { Text(EditDishStrings.category) })
+                OutlinedTextField(value = weightOrVolume, onValueChange = { weightOrVolume = it }, label = { Text(EditDishStrings.weightOrVolume) })
+                OutlinedTextField(value = ingredients, onValueChange = { ingredients = it }, label = { Text(EditDishStrings.ingredients) })
+                OutlinedTextField(value = calories, onValueChange = { calories = it }, label = { Text(EditDishStrings.calories) })
+                OutlinedTextField(value = proteins, onValueChange = { proteins = it }, label = { Text(EditDishStrings.proteins) })
+                OutlinedTextField(value = fats, onValueChange = { fats = it }, label = { Text(EditDishStrings.fats) })
+                OutlinedTextField(value = carbs, onValueChange = { carbs = it }, label = { Text(EditDishStrings.carbs) })
+                OutlinedTextField(value = cookingTime, onValueChange = { cookingTime = it }, label = { Text(EditDishStrings.cookingTime) })
+                OutlinedTextField(value = spiciness, onValueChange = { spiciness = it }, label = { Text(EditDishStrings.spiciness) })
 
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Checkbox(checked = vegetarian, onCheckedChange = { vegetarian = it })
-                    Text("Вегетарианское")
+                    Text(EditDishStrings.vegetarian)
                 }
 
-                OutlinedTextField(value = allergens, onValueChange = { allergens = it }, label = { Text("Аллергены") })
-                OutlinedTextField(value = addOns, onValueChange = { addOns = it }, label = { Text("Добавки") })
-                OutlinedTextField(value = addOnsPrice, onValueChange = { addOnsPrice = it }, label = { Text("Цена добавок") })
+                OutlinedTextField(value = allergens, onValueChange = { allergens = it }, label = { Text(EditDishStrings.allergens) })
+                OutlinedTextField(value = addOns, onValueChange = { addOns = it }, label = { Text(EditDishStrings.addOns) })
+                OutlinedTextField(value = addOnsPrice, onValueChange = { addOnsPrice = it }, label = { Text(EditDishStrings.addOnsPrice) })
 
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Checkbox(checked = availability, onCheckedChange = { availability = it })
-                    Text("Доступно")
+                    Text(EditDishStrings.available)
                 }
 
-                OutlinedTextField(value = ratingAverage, onValueChange = { ratingAverage = it }, label = { Text("Рейтинг") })
-                OutlinedTextField(value = portions, onValueChange = { portions = it }, label = { Text("Порции") })
-                OutlinedTextField(value = costPrice, onValueChange = { costPrice = it }, label = { Text("Себестоимость") })
-                OutlinedTextField(value = discount, onValueChange = { discount = it }, label = { Text("Скидка") })
+                OutlinedTextField(value = ratingAverage, onValueChange = { ratingAverage = it }, label = { Text(EditDishStrings.rating) })
+                OutlinedTextField(value = portions, onValueChange = { portions = it }, label = { Text(EditDishStrings.portions) })
+                OutlinedTextField(value = costPrice, onValueChange = { costPrice = it }, label = { Text(EditDishStrings.costPrice) })
+                OutlinedTextField(value = discount, onValueChange = { discount = it }, label = { Text(EditDishStrings.discount) })
 
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Checkbox(checked = popular, onCheckedChange = { popular = it })
-                    Text("Популярное блюдо")
+                    Text(EditDishStrings.popularDish)
                 }
 
                 if (error.isNotEmpty()) {
@@ -105,7 +138,7 @@ fun EditDishDialog(
         confirmButton = {
             TextButton(onClick = {
                 if (name.isBlank() || price.isBlank()) {
-                    error = "Заполните обязательные поля"
+                    error = EditDishStrings.fillRequired
                     return@TextButton
                 }
 
@@ -138,12 +171,12 @@ fun EditDishDialog(
 
                 onSave(updatedDish)
             }) {
-                Text("Сохранить")
+                Text(EditDishStrings.save)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Отмена")
+                Text(EditDishStrings.cancel)
             }
         }
     )

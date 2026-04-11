@@ -28,6 +28,61 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+// Строки для экрана оформления заказа
+object CheckoutStrings {
+    var currentLanguage = Strings.currentLanguage
+
+    val checkout: String get() = if (currentLanguage.value == Language.KAZAKH) "Тапсырыс беру" else "Оформление заказа"
+    val back: String get() = if (currentLanguage.value == Language.KAZAKH) "Артқа" else "Назад"
+    val total: String get() = if (currentLanguage.value == Language.KAZAKH) "Барлығы" else "Итого"
+    val confirmOrder: String get() = if (currentLanguage.value == Language.KAZAKH) "Тапсырысты растау" else "Подтвердить заказ"
+    val yourOrder: String get() = if (currentLanguage.value == Language.KAZAKH) "Сіздің тапсырысыңыз" else "Ваш заказ"
+    val contactInfo: String get() = if (currentLanguage.value == Language.KAZAKH) "Байланыс ақпараты" else "Контактная информация"
+    val name: String get() = if (currentLanguage.value == Language.KAZAKH) "Аты *" else "Имя *"
+    val email: String get() = if (currentLanguage.value == Language.KAZAKH) "Email *" else "Email *"
+    val phone: String get() = if (currentLanguage.value == Language.KAZAKH) "Телефон *" else "Телефон *"
+    val phonePlaceholder: String get() = if (currentLanguage.value == Language.KAZAKH) "+7 (XXX) XXX-XX-XX" else "+7 (XXX) XXX-XX-XX"
+    val delivery: String get() = if (currentLanguage.value == Language.KAZAKH) "Жеткізу" else "Доставка"
+    val deliveryAddress: String get() = if (currentLanguage.value == Language.KAZAKH) "Жеткізу мекенжайы *" else "Адрес доставки *"
+    val apartment: String get() = if (currentLanguage.value == Language.KAZAKH) "Пәтер" else "Квартира"
+    val entrance: String get() = if (currentLanguage.value == Language.KAZAKH) "Кіреберіс" else "Подъезд"
+    val floor: String get() = if (currentLanguage.value == Language.KAZAKH) "Қабат" else "Этаж"
+    val intercom: String get() = if (currentLanguage.value == Language.KAZAKH) "Домофон" else "Домофон"
+    val courierComment: String get() = if (currentLanguage.value == Language.KAZAKH) "Курьерге түсініктеме" else "Комментарий для курьера"
+    val payment: String get() = if (currentLanguage.value == Language.KAZAKH) "Төлем" else "Оплата"
+    val cashOnDelivery: String get() = if (currentLanguage.value == Language.KAZAKH) "Алған кезде қолма-қол ақша" else "Наличными при получении"
+    val bankCard: String get() = if (currentLanguage.value == Language.KAZAKH) "Банк картасы" else "Банковская карта"
+    val cardNumber: String get() = if (currentLanguage.value == Language.KAZAKH) "Карта нөмірі *" else "Номер карты *"
+    val cardNumberPlaceholder: String get() = if (currentLanguage.value == Language.KAZAKH) "1234 5678 9012 3456" else "1234 5678 9012 3456"
+    val expiryDate: String get() = if (currentLanguage.value == Language.KAZAKH) "Жарамдылық мерзімі *" else "Срок действия *"
+    val expiryPlaceholder: String get() = if (currentLanguage.value == Language.KAZAKH) "АА/ЖЖ" else "MM/YY"
+    val cvc: String get() = if (currentLanguage.value == Language.KAZAKH) "CVC *" else "CVC *"
+    val cardholderName: String get() = if (currentLanguage.value == Language.KAZAKH) "Карта иесінің аты *" else "Имя держателя карты *"
+    val cardholderPlaceholder: String get() = if (currentLanguage.value == Language.KAZAKH) "IVAN IVANOV" else "IVAN IVANOV"
+
+    // Диалоги
+    val orderSuccess: String get() = if (currentLanguage.value == Language.KAZAKH) "Тапсырыс сәтті рәсімделді!" else "Заказ успешно оформлен!"
+    val orderAccepted: String get() = if (currentLanguage.value == Language.KAZAKH) "Сіздің тапсырысыңыз өңдеуге қабылданды. Сатып алғаныңыз үшін рахмет!" else "Ваш заказ принят в обработку. Спасибо за покупку!"
+    val great: String get() = if (currentLanguage.value == Language.KAZAKH) "Керемет" else "Отлично"
+    val error: String get() = if (currentLanguage.value == Language.KAZAKH) "Қате" else "Ошибка"
+    val ok: String get() = if (currentLanguage.value == Language.KAZAKH) "OK" else "OK"
+    val userNotAuthorized: String get() = if (currentLanguage.value == Language.KAZAKH) "Пайдаланушы авторландырылмаған" else "Пользователь не авторизован"
+    val orderCreationError: String get() = if (currentLanguage.value == Language.KAZAKH) "Тапсырыс жасау қатесі: " else "Ошибка при создании заказа: "
+    val restaurant: String get() = if (currentLanguage.value == Language.KAZAKH) "Мейрамхана" else "Ресторан"
+
+    fun getItemsWord(count: Int): String {
+        return if (currentLanguage.value == Language.KAZAKH) {
+            "тауар"
+        } else {
+            when {
+                count % 10 == 1 && count % 100 != 11 -> "товар"
+                count % 10 in 2..4 && count % 100 !in 12..14 -> "товара"
+                else -> "товаров"
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckoutScreen(
@@ -131,18 +186,17 @@ fun CheckoutScreen(
 
     fun saveOrderToFirebase() {
         if (currentUserEmail.isBlank()) {
-            errorMessage = "Пользователь не авторизован"
+            errorMessage = CheckoutStrings.userNotAuthorized
             showErrorDialog = true
             return
         }
 
         isLoading = true
 
-        // ГРУППИРУЕМ ПО РЕСТОРАНАМ И СОЗДАЕМ ОТДЕЛЬНЫЙ ЗАКАЗ ДЛЯ КАЖДОГО РЕСТОРАНА
         val ordersByRestaurant = cartItems.groupBy { it.dish.owner }
 
         val ordersToCreate = ordersByRestaurant.map { (restaurantId, items) ->
-            val restaurantName = items.firstOrNull()?.dish?.owner?.split("@")?.first() ?: "Ресторан"
+            val restaurantName = items.firstOrNull()?.dish?.owner?.split("@")?.first() ?: CheckoutStrings.restaurant
 
             val orderItems = items.map { cartItem ->
                 val discountPercentage = cartItem.dish.discount?.toDoubleOrNull() ?: 0.0
@@ -181,14 +235,13 @@ fun CheckoutScreen(
                     "floor" to floor,
                     "intercom" to intercom
                 ),
-                "paymentMethod" to (selectedPaymentMethod?.displayName ?: "Наличными"),
+                "paymentMethod" to (selectedPaymentMethod?.displayName ?: CheckoutStrings.cashOnDelivery),
                 "comment" to deliveryComment,
                 "createdAt" to FieldValue.serverTimestamp(),
                 "updatedAt" to FieldValue.serverTimestamp()
             )
         }
 
-        // Сохраняем каждый заказ отдельно
         val batch = db.batch()
         ordersToCreate.forEach { orderData ->
             val orderRef = db.collection("orders").document()
@@ -203,7 +256,7 @@ fun CheckoutScreen(
             }
             .addOnFailureListener { e ->
                 isLoading = false
-                errorMessage = "Ошибка при создании заказа: ${e.message}"
+                errorMessage = CheckoutStrings.orderCreationError + e.message
                 showErrorDialog = true
             }
     }
@@ -213,14 +266,14 @@ fun CheckoutScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Оформление заказа",
+                        text = CheckoutStrings.checkout,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.Default.ArrowBack, contentDescription = CheckoutStrings.back)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -246,12 +299,12 @@ fun CheckoutScreen(
                     ) {
                         Column {
                             Text(
-                                text = "Итого: ${"%.0f".format(totalPrice)} тг",
+                                text = "${CheckoutStrings.total}: ${"%.0f".format(totalPrice)} тг",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "$totalItems ${getItemsWord(totalItems)}",
+                                text = "$totalItems ${CheckoutStrings.getItemsWord(totalItems)}",
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
@@ -270,7 +323,7 @@ fun CheckoutScreen(
                                     strokeWidth = 2.dp
                                 )
                             } else {
-                                Text(text = "Подтвердить заказ", fontSize = 16.sp)
+                                Text(text = CheckoutStrings.confirmOrder, fontSize = 16.sp)
                             }
                         }
                     }
@@ -286,7 +339,7 @@ fun CheckoutScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                Text(text = "Ваш заказ", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(text = CheckoutStrings.yourOrder, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             }
 
             items(cartItems) { cartItem ->
@@ -296,12 +349,12 @@ fun CheckoutScreen(
             item { Spacer(Modifier.height(8.dp)) }
 
             item {
-                Text(text = "Контактная информация", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(text = CheckoutStrings.contactInfo, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
                 OutlinedTextField(
                     value = userName,
                     onValueChange = { userName = it },
-                    label = { Text("Имя *") },
+                    label = { Text(CheckoutStrings.name) },
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
                     shape = RoundedCornerShape(12.dp)
@@ -310,7 +363,7 @@ fun CheckoutScreen(
                 OutlinedTextField(
                     value = userEmail,
                     onValueChange = { userEmail = it },
-                    label = { Text("Email *") },
+                    label = { Text(CheckoutStrings.email) },
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
                     enabled = false,
@@ -320,11 +373,11 @@ fun CheckoutScreen(
                 OutlinedTextField(
                     value = userPhone,
                     onValueChange = { if (it.length <= 15) userPhone = it },
-                    label = { Text("Телефон *") },
+                    label = { Text(CheckoutStrings.phone) },
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = { Icon(Icons.Outlined.Phone, contentDescription = null) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    placeholder = { Text("+7 (XXX) XXX-XX-XX") },
+                    placeholder = { Text(CheckoutStrings.phonePlaceholder) },
                     shape = RoundedCornerShape(12.dp)
                 )
             }
@@ -332,12 +385,12 @@ fun CheckoutScreen(
             item { Spacer(Modifier.height(8.dp)) }
 
             item {
-                Text(text = "Доставка", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(text = CheckoutStrings.delivery, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
                 OutlinedTextField(
                     value = deliveryAddress,
                     onValueChange = { deliveryAddress = it },
-                    label = { Text("Адрес доставки *") },
+                    label = { Text(CheckoutStrings.deliveryAddress) },
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = { Icon(Icons.Outlined.LocationOn, contentDescription = null) },
                     shape = RoundedCornerShape(12.dp),
@@ -351,7 +404,7 @@ fun CheckoutScreen(
                     OutlinedTextField(
                         value = apartment,
                         onValueChange = { apartment = it },
-                        label = { Text("Квартира") },
+                        label = { Text(CheckoutStrings.apartment) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         shape = RoundedCornerShape(12.dp)
@@ -359,7 +412,7 @@ fun CheckoutScreen(
                     OutlinedTextField(
                         value = entrance,
                         onValueChange = { entrance = it },
-                        label = { Text("Подъезд") },
+                        label = { Text(CheckoutStrings.entrance) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         shape = RoundedCornerShape(12.dp)
@@ -373,7 +426,7 @@ fun CheckoutScreen(
                     OutlinedTextField(
                         value = floor,
                         onValueChange = { floor = it },
-                        label = { Text("Этаж") },
+                        label = { Text(CheckoutStrings.floor) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         shape = RoundedCornerShape(12.dp)
@@ -381,7 +434,7 @@ fun CheckoutScreen(
                     OutlinedTextField(
                         value = intercom,
                         onValueChange = { intercom = it },
-                        label = { Text("Домофон") },
+                        label = { Text(CheckoutStrings.intercom) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
                     )
@@ -392,7 +445,7 @@ fun CheckoutScreen(
                 OutlinedTextField(
                     value = deliveryComment,
                     onValueChange = { deliveryComment = it },
-                    label = { Text("Комментарий для курьера") },
+                    label = { Text(CheckoutStrings.courierComment) },
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = { Icon(Icons.Outlined.Comment, contentDescription = null) },
                     maxLines = 3,
@@ -403,7 +456,7 @@ fun CheckoutScreen(
             item { Spacer(Modifier.height(8.dp)) }
 
             item {
-                Text(text = "Оплата", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(text = CheckoutStrings.payment, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     // Наличными
@@ -425,7 +478,7 @@ fun CheckoutScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "Наличными при получении",
+                            text = CheckoutStrings.cashOnDelivery,
                             modifier = Modifier.padding(start = 12.dp),
                             fontSize = 16.sp
                         )
@@ -450,14 +503,14 @@ fun CheckoutScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "Банковская карта",
+                            text = CheckoutStrings.bankCard,
                             modifier = Modifier.padding(start = 12.dp),
                             fontSize = 16.sp
                         )
                     }
                 }
 
-                // Поля для карты (показываются только если выбран способ оплаты картой)
+                // Поля для карты
                 if (selectedPaymentMethod == PaymentMethod.CARD) {
                     Column(
                         modifier = Modifier.padding(top = 16.dp),
@@ -466,11 +519,11 @@ fun CheckoutScreen(
                         OutlinedTextField(
                             value = cardNumber,
                             onValueChange = { if (it.length <= 19) cardNumber = it.formatCardNumber() },
-                            label = { Text("Номер карты *") },
+                            label = { Text(CheckoutStrings.cardNumber) },
                             modifier = Modifier.fillMaxWidth(),
                             leadingIcon = { Icon(Icons.Outlined.CreditCard, contentDescription = null) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            placeholder = { Text("1234 5678 9012 3456") },
+                            placeholder = { Text(CheckoutStrings.cardNumberPlaceholder) },
                             shape = RoundedCornerShape(12.dp)
                         )
 
@@ -481,16 +534,16 @@ fun CheckoutScreen(
                             OutlinedTextField(
                                 value = cardExpiry,
                                 onValueChange = { if (it.length <= 5) cardExpiry = it.formatExpiryDate() },
-                                label = { Text("Срок действия *") },
+                                label = { Text(CheckoutStrings.expiryDate) },
                                 modifier = Modifier.weight(1f),
-                                placeholder = { Text("MM/YY") },
+                                placeholder = { Text(CheckoutStrings.expiryPlaceholder) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 shape = RoundedCornerShape(12.dp)
                             )
                             OutlinedTextField(
                                 value = cardCVC,
                                 onValueChange = { if (it.length <= 3) cardCVC = it },
-                                label = { Text("CVC *") },
+                                label = { Text(CheckoutStrings.cvc) },
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 placeholder = { Text("123") },
@@ -501,9 +554,9 @@ fun CheckoutScreen(
                         OutlinedTextField(
                             value = cardholderName,
                             onValueChange = { cardholderName = it },
-                            label = { Text("Имя держателя карты *") },
+                            label = { Text(CheckoutStrings.cardholderName) },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("IVAN IVANOV") },
+                            placeholder = { Text(CheckoutStrings.cardholderPlaceholder) },
                             shape = RoundedCornerShape(12.dp)
                         )
                     }
@@ -517,8 +570,8 @@ fun CheckoutScreen(
     if (showSuccessDialog) {
         AlertDialog(
             onDismissRequest = { showSuccessDialog = false },
-            title = { Text("Заказ успешно оформлен!") },
-            text = { Text("Ваш заказ принят в обработку. Спасибо за покупку!") },
+            title = { Text(CheckoutStrings.orderSuccess) },
+            text = { Text(CheckoutStrings.orderAccepted) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -528,7 +581,7 @@ fun CheckoutScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Отлично")
+                    Text(CheckoutStrings.great)
                 }
             },
             shape = RoundedCornerShape(28.dp)
@@ -538,7 +591,7 @@ fun CheckoutScreen(
     if (showErrorDialog) {
         AlertDialog(
             onDismissRequest = { showErrorDialog = false },
-            title = { Text("Ошибка") },
+            title = { Text(CheckoutStrings.error) },
             text = { Text(errorMessage) },
             confirmButton = {
                 Button(
@@ -546,7 +599,7 @@ fun CheckoutScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("OK")
+                    Text(CheckoutStrings.ok)
                 }
             },
             shape = RoundedCornerShape(28.dp)
@@ -625,12 +678,4 @@ private fun String.formatExpiryDate(): String {
         return "${cleaned.take(2)}/${cleaned.drop(2).take(2)}"
     }
     return cleaned
-}
-
-private fun getItemsWord(count: Int): String {
-    return when {
-        count % 10 == 1 && count % 100 != 11 -> "товар"
-        count % 10 in 2..4 && count % 100 !in 12..14 -> "товара"
-        else -> "товаров"
-    }
 }

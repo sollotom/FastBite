@@ -24,6 +24,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 
+// Строки для карточки блюда
+object DishCardStrings {
+    var currentLanguage = Strings.currentLanguage
+
+    val add: String get() = if (currentLanguage.value == Language.KAZAKH) "Қосу" else "Добавить"
+    val inCart: String get() = if (currentLanguage.value == Language.KAZAKH) "себетте" else "в корзине"
+    val decrease: String get() = if (currentLanguage.value == Language.KAZAKH) "Азайту" else "Уменьшить"
+    val increase: String get() = if (currentLanguage.value == Language.KAZAKH) "Көбейту" else "Увеличить"
+}
+
 // Карточка блюда с корзиной (упрощенная версия)
 @Composable
 fun DishCardWithCartSimple(
@@ -120,7 +130,7 @@ fun CartButtonWithInstantUpdate(
         ) {
             Icon(Icons.Default.AddShoppingCart, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Добавить", fontWeight = FontWeight.Medium)
+            Text(DishCardStrings.add, fontWeight = FontWeight.Medium)
         }
     } else {
         // Управление количеством
@@ -138,7 +148,7 @@ fun CartButtonWithInstantUpdate(
             ) {
                 Icon(
                     Icons.Default.Remove,
-                    contentDescription = "Уменьшить",
+                    contentDescription = DishCardStrings.decrease,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
@@ -154,7 +164,7 @@ fun CartButtonWithInstantUpdate(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    "в корзине",
+                    DishCardStrings.inCart,
                     fontSize = 10.sp,
                     color = Color.Gray
                 )
@@ -169,7 +179,7 @@ fun CartButtonWithInstantUpdate(
             ) {
                 Icon(
                     Icons.Default.Add,
-                    contentDescription = "Увеличить",
+                    contentDescription = DishCardStrings.increase,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )

@@ -24,6 +24,39 @@ import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.*
 
+// Строки для UserOrdersScreen
+object UserOrdersStrings {
+    val myOrders: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Менің тапсырыстарым" else "Мои заказы"
+    val back: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Артқа" else "Назад"
+    val noOrders: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Сізде әзірге тапсырыстар жоқ" else "У вас пока нет заказов"
+    val makeFirstOrder: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Бірінші тапсырыс жасаңыз, ол осында көрсетіледі" else "Сделайте первый заказ, чтобы увидеть его здесь"
+    val orderNumber: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тапсырыс №" else "Заказ #"
+    val restaurant: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Мейрамхана" else "Ресторан"
+    val total: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Сомасы" else "Сумма"
+    val expand: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жаю" else "Развернуть"
+    val collapse: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жию" else "Свернуть"
+    val orderComposition: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тапсырыс құрамы" else "Состав заказа"
+    val deliveryAddress: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жеткізу мекенжайы" else "Адрес доставки"
+    val paymentMethod: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Төлем тәсілі" else "Способ оплаты"
+    val comment: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Түсініктеме" else "Комментарий"
+    val delivered: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жеткізілді" else "Доставлено"
+    val awaitingDelivery: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жеткізуді күтуде" else "Ожидает доставки"
+    val allDelivered: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Барлығы жеткізілді" else "Все доставлено"
+    val partiallyDelivered: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Ішінара жеткізілді" else "Частично доставлено"
+    val leaveReview: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Пікір қалдыру" else "Оставить отзыв"
+    val editReview: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Пікірді өңдеу" else "Редактировать отзыв"
+    val rate: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Бағалау" else "Оценить"
+    val edit: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Өзгерту" else "Изменить"
+    val yourRating: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Сіздің бағаңыз" else "Ваша оценка"
+    val yourReview: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Сіздің пікіріңіз" else "Ваш отзыв"
+    val shareImpressions: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тағам туралы әсерлеріңізбен бөлісіңіз..." else "Поделитесь впечатлениями о блюде..."
+    val pleaseRate: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Баға қойыңыз" else "Пожалуйста, поставьте оценку"
+    val saveChanges: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Өзгерістерді сақтау" else "Сохранить изменения"
+    val sendReview: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Пікір жіберу" else "Отправить отзыв"
+    val cancel: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Бас тарту" else "Отмена"
+    val dish: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тағам" else "Блюдо"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserOrdersScreen(
@@ -142,14 +175,14 @@ fun UserOrdersScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "Мои заказы",
+                        UserOrdersStrings.myOrders,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UserOrdersStrings.back)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -181,13 +214,13 @@ fun UserOrdersScreen(
                         tint = Color.Gray
                     )
                     Text(
-                        "У вас пока нет заказов",
+                        UserOrdersStrings.noOrders,
                         fontSize = 18.sp,
                         color = Color.Gray,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        "Сделайте первый заказ, чтобы увидеть его здесь",
+                        UserOrdersStrings.makeFirstOrder,
                         fontSize = 14.sp,
                         color = Color.Gray
                     )
@@ -272,8 +305,8 @@ fun OrderCardForUser(
     val someItemsDelivered = order.items.any { it.isDelivered } && !allItemsDelivered
 
     val customStatus = when {
-        allItemsDelivered -> "Все доставлено"
-        someItemsDelivered -> "Частично доставлено"
+        allItemsDelivered -> UserOrdersStrings.allDelivered
+        someItemsDelivered -> UserOrdersStrings.partiallyDelivered
         else -> null
     }
 
@@ -300,7 +333,7 @@ fun OrderCardForUser(
             ) {
                 Column {
                     Text(
-                        "Заказ #${order.id.takeLast(6)}",
+                        "${UserOrdersStrings.orderNumber}${order.id.takeLast(6)}",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
@@ -325,7 +358,7 @@ fun OrderCardForUser(
             }
 
             Text(
-                "Ресторан: ${order.restaurantName}",
+                "${UserOrdersStrings.restaurant}: ${order.restaurantName}",
                 fontSize = 14.sp,
                 color = Color.Gray
             )
@@ -336,7 +369,7 @@ fun OrderCardForUser(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Сумма: ${"%.0f".format(order.totalAmount)} тг",
+                    "${UserOrdersStrings.total}: ${"%.0f".format(order.totalAmount)} тг",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -344,7 +377,7 @@ fun OrderCardForUser(
 
                 Icon(
                     if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (expanded) "Свернуть" else "Развернуть",
+                    contentDescription = if (expanded) UserOrdersStrings.collapse else UserOrdersStrings.expand,
                     tint = Color.Gray
                 )
             }
@@ -353,7 +386,7 @@ fun OrderCardForUser(
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                 Text(
-                    "Состав заказа:",
+                    UserOrdersStrings.orderComposition,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
@@ -393,14 +426,14 @@ fun OrderCardForUser(
                                     )
                                     Spacer(Modifier.width(4.dp))
                                     Text(
-                                        "Доставлено",
+                                        UserOrdersStrings.delivered,
                                         fontSize = 11.sp,
                                         color = Color(0xFF4CAF50)
                                     )
                                 }
                             } else {
                                 Text(
-                                    "Ожидает доставки",
+                                    UserOrdersStrings.awaitingDelivery,
                                     fontSize = 11.sp,
                                     color = Color.Gray,
                                     modifier = Modifier.padding(top = 4.dp)
@@ -430,12 +463,12 @@ fun OrderCardForUser(
                             ) {
                                 Icon(
                                     if (hasReview) Icons.Default.Edit else Icons.Default.Star,
-                                    contentDescription = if (hasReview) "Редактировать отзыв" else "Оставить отзыв",
+                                    contentDescription = if (hasReview) UserOrdersStrings.editReview else UserOrdersStrings.leaveReview,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    if (hasReview) "Изменить" else "Оценить",
+                                    if (hasReview) UserOrdersStrings.edit else UserOrdersStrings.rate,
                                     fontSize = 13.sp
                                 )
                             }
@@ -444,11 +477,11 @@ fun OrderCardForUser(
                 }
 
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
-                Text("Адрес доставки:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text("${UserOrdersStrings.deliveryAddress}:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 Text(order.deliveryAddress.address, fontSize = 14.sp, color = Color.Gray)
-                Text("Способ оплаты: ${order.paymentMethod}", fontSize = 14.sp, color = Color.Gray)
+                Text("${UserOrdersStrings.paymentMethod}: ${order.paymentMethod}", fontSize = 14.sp, color = Color.Gray)
                 if (order.comment.isNotBlank()) {
-                    Text("Комментарий: ${order.comment}", fontSize = 14.sp, color = Color.Gray)
+                    Text("${UserOrdersStrings.comment}: ${order.comment}", fontSize = 14.sp, color = Color.Gray)
                 }
             }
         }
@@ -475,7 +508,7 @@ fun AddOrEditReviewDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                if (isEditing) "Редактировать отзыв" else "Оставить отзыв",
+                if (isEditing) UserOrdersStrings.editReview else UserOrdersStrings.leaveReview,
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp
             )
@@ -488,14 +521,14 @@ fun AddOrEditReviewDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    "Блюдо: ${dish.name}",
+                    "${UserOrdersStrings.dish}: ${dish.name}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )
 
                 Column {
                     Text(
-                        "Ваша оценка",
+                        UserOrdersStrings.yourRating,
                         fontSize = 14.sp,
                         color = Color.Gray,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -512,7 +545,7 @@ fun AddOrEditReviewDialog(
                             ) {
                                 Icon(
                                     if (index < rating) Icons.Filled.Star else Icons.Outlined.Star,
-                                    contentDescription = "Рейтинг ${index + 1}",
+                                    contentDescription = "${UserOrdersStrings.rate} ${index + 1}",
                                     tint = if (index < rating) Color(0xFFFFC107) else Color.Gray,
                                     modifier = Modifier.size(32.dp)
                                 )
@@ -524,8 +557,8 @@ fun AddOrEditReviewDialog(
                 OutlinedTextField(
                     value = comment,
                     onValueChange = { comment = it },
-                    label = { Text("Ваш отзыв") },
-                    placeholder = { Text("Поделитесь впечатлениями о блюде...") },
+                    label = { Text(UserOrdersStrings.yourReview) },
+                    placeholder = { Text(UserOrdersStrings.shareImpressions) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                     maxLines = 5,
@@ -545,7 +578,7 @@ fun AddOrEditReviewDialog(
             Button(
                 onClick = {
                     if (rating == 0) {
-                        error = "Пожалуйста, поставьте оценку"
+                        error = UserOrdersStrings.pleaseRate
                         return@Button
                     }
 
@@ -598,7 +631,7 @@ fun AddOrEditReviewDialog(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text(if (isEditing) "Сохранить изменения" else "Отправить отзыв")
+                    Text(if (isEditing) UserOrdersStrings.saveChanges else UserOrdersStrings.sendReview)
                 }
             }
         },
@@ -607,7 +640,7 @@ fun AddOrEditReviewDialog(
                 onClick = onDismiss,
                 enabled = !isLoading
             ) {
-                Text("Отмена")
+                Text(UserOrdersStrings.cancel)
             }
         },
         shape = RoundedCornerShape(28.dp)
@@ -632,24 +665,14 @@ fun UserOrderStatusChipCustom(statusText: String, statusColor: Color) {
 
 @Composable
 fun UserOrderStatusChip(status: OrderStatus) {
-    val (backgroundColor, textColor) = when (status) {
-        OrderStatus.PENDING -> Color(0xFFFFA000) to Color.White
-        OrderStatus.CONFIRMED -> Color(0xFF2196F3) to Color.White
-        OrderStatus.PREPARING -> Color(0xFFFF9800) to Color.White
-        OrderStatus.READY_FOR_PICKUP -> Color(0xFF4CAF50) to Color.White
-        OrderStatus.DELIVERING -> Color(0xFF9C27B0) to Color.White
-        OrderStatus.DELIVERED -> Color(0xFF4CAF50) to Color.White
-        OrderStatus.CANCELLED -> Color(0xFFF44336) to Color.White
-    }
-
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = backgroundColor,
+        color = Color(status.color),
         modifier = Modifier.wrapContentSize()
     ) {
         Text(
-            status.displayName,
-            color = textColor,
+            status.localizedName(),
+            color = Color.White,
             fontSize = 12.sp,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )

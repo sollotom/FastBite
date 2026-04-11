@@ -39,23 +39,178 @@ enum class ProfileScreenType {
     MyReviews, EditReview
 }
 
-enum class SupportTopic(val title: String) {
-    ORDER("Проблема с заказом"),
-    PAYMENT("Оплата"),
-    DELIVERY("Доставка"),
-    RESTAURANT("Ресторан"),
-    APP("Приложение"),
-    OTHER("Другое")
+enum class SupportTopic(val title: String, val titleKz: String) {
+    ORDER("Проблема с заказом", "Тапсырыс мәселесі"),
+    PAYMENT("Оплата", "Төлем"),
+    DELIVERY("Доставка", "Жеткізу"),
+    RESTAURANT("Ресторан", "Мейрамхана"),
+    APP("Приложение", "Қосымша"),
+    OTHER("Другое", "Басқа")
+}
+
+enum class Language(val code: String, val displayName: String) {
+    RUSSIAN("ru", "Русский"),
+    KAZAKH("kz", "Қазақша")
 }
 
 data class FAQItem(
     val question: String,
-    val answer: String
+    val answer: String,
+    val questionKz: String,
+    val answerKz: String
 )
 
-// ==================== КОМПОНЕНТ ЗВЕЗД ====================
+// ==================== STRING RESOURCES ====================
 
-// ==================== КОМПОНЕНТ ЗВЕЗД (ИСПРАВЛЕНО) ====================
+object Strings {
+    var currentLanguage = mutableStateOf(Language.RUSSIAN)
+
+    fun setLanguage(language: Language) {
+        currentLanguage.value = language
+    }
+
+    fun getLanguage(): Language = currentLanguage.value
+
+    // Profile Screen Titles
+    val profile: String get() = if (currentLanguage.value == Language.KAZAKH) "Профиль" else "Профиль"
+    val settings: String get() = if (currentLanguage.value == Language.KAZAKH) "Баптаулар" else "Настройки"
+    val editProfile: String get() = if (currentLanguage.value == Language.KAZAKH) "Профильді өңдеу" else "Редактировать профиль"
+    val deliveryAddresses: String get() = if (currentLanguage.value == Language.KAZAKH) "Жеткізу мекенжайлары" else "Адреса доставки"
+    val addAddress: String get() = if (currentLanguage.value == Language.KAZAKH) "Мекенжай қосу" else "Добавить адрес"
+    val editAddress: String get() = if (currentLanguage.value == Language.KAZAKH) "Мекенжайды өңдеу" else "Редактировать адрес"
+    val helpAndSupport: String get() = if (currentLanguage.value == Language.KAZAKH) "Көмек және қолдау" else "Помощь и поддержка"
+    val faq: String get() = if (currentLanguage.value == Language.KAZAKH) "Жиі қойылатын сұрақтар" else "Часто задаваемые вопросы"
+    val contactSupport: String get() = if (currentLanguage.value == Language.KAZAKH) "Қолдау қызметіне хабарласу" else "Связаться с поддержкой"
+    val termsAndConditions: String get() = if (currentLanguage.value == Language.KAZAKH) "Ережелер мен шарттар" else "Правила и условия"
+    val aboutApp: String get() = if (currentLanguage.value == Language.KAZAKH) "Қосымша туралы" else "О приложении"
+    val myReviews: String get() = if (currentLanguage.value == Language.KAZAKH) "Менің пікірлерім" else "Мои отзывы"
+    val editReview: String get() = if (currentLanguage.value == Language.KAZAKH) "Пікірді өңдеу" else "Редактировать отзыв"
+
+    // Common
+    val back: String get() = if (currentLanguage.value == Language.KAZAKH) "Артқа" else "Назад"
+    val save: String get() = if (currentLanguage.value == Language.KAZAKH) "Сақтау" else "Сохранить"
+    val cancel: String get() = if (currentLanguage.value == Language.KAZAKH) "Бас тарту" else "Отмена"
+    val delete: String get() = if (currentLanguage.value == Language.KAZAKH) "Жою" else "Удалить"
+    val edit: String get() = if (currentLanguage.value == Language.KAZAKH) "Өңдеу" else "Редактировать"
+    val update: String get() = if (currentLanguage.value == Language.KAZAKH) "Жаңарту" else "Обновить"
+
+    // Profile Menu
+    val myOrders: String get() = if (currentLanguage.value == Language.KAZAKH) "Менің тапсырыстарым" else "Мои заказы"
+    val orderHistory: String get() = if (currentLanguage.value == Language.KAZAKH) "Тапсырыстар тарихы мен күйі" else "История и статус заказов"
+    val yourReviews: String get() = if (currentLanguage.value == Language.KAZAKH) "Тағамдар туралы пікірлеріңіз" else "Ваши отзывы о блюдах"
+    val paymentMethods: String get() = if (currentLanguage.value == Language.KAZAKH) "Төлем тәсілдері" else "Способы оплаты"
+    val cardsCash: String get() = if (currentLanguage.value == Language.KAZAKH) "Карталар, қолма-қол ақша" else "Карты, наличные"
+    val help: String get() = if (currentLanguage.value == Language.KAZAKH) "Көмек" else "Помощь"
+    val faqAndSupport: String get() = if (currentLanguage.value == Language.KAZAKH) "ЖҚС және қолдау" else "FAQ и поддержка"
+
+    // Addresses
+    val addAddressButton: String get() = if (currentLanguage.value == Language.KAZAKH) "Мекенжай қосу" else "Добавить адрес"
+    val savedAddresses: String get() = if (currentLanguage.value == Language.KAZAKH) "Сақталған мекенжайлар" else "Сохраненные адреса"
+    val noAddresses: String get() = if (currentLanguage.value == Language.KAZAKH) "Сізде әлі сақталған мекенжайлар жоқ" else "У вас пока нет сохраненных адресов"
+    val addAddressForQuickOrder: String get() = if (currentLanguage.value == Language.KAZAKH) "Тапсырысты жылдам рәсімдеу үшін мекенжай қосыңыз" else "Добавьте адрес для быстрого оформления заказа"
+    val setAsDefault: String get() = if (currentLanguage.value == Language.KAZAKH) "Негізгі ету" else "Сделать основным"
+    val defaultAddress: String get() = if (currentLanguage.value == Language.KAZAKH) "Негізгі мекенжай" else "Основной адрес"
+    val deleteAddressTitle: String get() = if (currentLanguage.value == Language.KAZAKH) "Мекенжайды жою" else "Удалить адрес"
+    val deleteAddressConfirm: String get() = if (currentLanguage.value == Language.KAZAKH) "Бұл мекенжайды жойғыңыз келетініне сенімдісіз бе?" else "Вы уверены, что хотите удалить адрес?"
+    val addressDeleted: String get() = if (currentLanguage.value == Language.KAZAKH) "Мекенжай жойылды" else "Адрес удален"
+    val addressAdded: String get() = if (currentLanguage.value == Language.KAZAKH) "Мекенжай қосылды" else "Адрес добавлен"
+    val addressUpdated: String get() = if (currentLanguage.value == Language.KAZAKH) "Мекенжай жаңартылды" else "Адрес обновлен"
+    val defaultAddressChanged: String get() = if (currentLanguage.value == Language.KAZAKH) "Негізгі мекенжай өзгертілді" else "Основной адрес изменен"
+
+    // Settings
+    val notifications: String get() = if (currentLanguage.value == Language.KAZAKH) "Хабарландырулар" else "Уведомления"
+    val receiveOrderNotifications: String get() = if (currentLanguage.value == Language.KAZAKH) "Тапсырыстар туралы хабарландырулар алу" else "Получать уведомления о заказах"
+    val emailNewsletter: String get() = if (currentLanguage.value == Language.KAZAKH) "Email-таратылым" else "Email-рассылка"
+    val receiveNewsAndOffers: String get() = if (currentLanguage.value == Language.KAZAKH) "Жаңалықтар мен акцияларды алу" else "Получать новости и акции"
+    val language_setting: String get() = if (currentLanguage.value == Language.KAZAKH) "Тіл" else "Язык"
+    val logout: String get() = if (currentLanguage.value == Language.KAZAKH) "Аккаунттан шығу" else "Выйти из аккаунта"
+    val endSession: String get() = if (currentLanguage.value == Language.KAZAKH) "Сеансты аяқтау" else "Завершить сеанс"
+    val logoutConfirm: String get() = if (currentLanguage.value == Language.KAZAKH) "Аккаунттан шығу" else "Выход из аккаунта"
+    val logoutConfirmMessage: String get() = if (currentLanguage.value == Language.KAZAKH) "Шыққыңыз келетініне сенімдісіз бе?" else "Вы уверены, что хотите выйти?"
+    val exit: String get() = if (currentLanguage.value == Language.KAZAKH) "Шығу" else "Выйти"
+
+    // Edit Profile
+    val name: String get() = if (currentLanguage.value == Language.KAZAKH) "Аты" else "Имя"
+    val phone: String get() = if (currentLanguage.value == Language.KAZAKH) "Телефон" else "Телефон"
+    val email: String get() = if (currentLanguage.value == Language.KAZAKH) "Email" else "Email"
+    val fillInformation: String get() = if (currentLanguage.value == Language.KAZAKH) "Ақпаратты толтырыңыз" else "Заполните информацию"
+    val user: String get() = if (currentLanguage.value == Language.KAZAKH) "Пайдаланушы" else "Пользователь"
+
+    // Address Form
+    val newAddress: String get() = if (currentLanguage.value == Language.KAZAKH) "Жаңа мекенжай" else "Новый адрес"
+    val addressRequired: String get() = if (currentLanguage.value == Language.KAZAKH) "Мекенжай *" else "Адрес *"
+    val addressPlaceholder: String get() = if (currentLanguage.value == Language.KAZAKH) "Қала, көше, үй" else "Город, улица, дом"
+    val addressRequiredError: String get() = if (currentLanguage.value == Language.KAZAKH) "Мекенжай міндетті түрде толтырылуы керек" else "Адрес обязателен для заполнения"
+    val apartment: String get() = if (currentLanguage.value == Language.KAZAKH) "Пәтер/кеңсе" else "Квартира/офис"
+    val optional: String get() = if (currentLanguage.value == Language.KAZAKH) "Міндетті емес" else "Необязательно"
+    val entrance: String get() = if (currentLanguage.value == Language.KAZAKH) "Кіреберіс" else "Подъезд"
+    val floor: String get() = if (currentLanguage.value == Language.KAZAKH) "Қабат" else "Этаж"
+    val intercom: String get() = if (currentLanguage.value == Language.KAZAKH) "Домофон" else "Домофон"
+    val makeDefaultAddress: String get() = if (currentLanguage.value == Language.KAZAKH) "Негізгі мекенжай ету" else "Сделать основным адресом"
+
+    // Help
+    val howCanWeHelp: String get() = if (currentLanguage.value == Language.KAZAKH) "Сізге қалай көмектесе аламыз?" else "Чем мы можем помочь?"
+    val chooseSection: String get() = if (currentLanguage.value == Language.KAZAKH) "Сізді қызықтыратын бөлімді таңдаңыз" else "Выберите интересующий вас раздел"
+    val faqDescription: String get() = if (currentLanguage.value == Language.KAZAKH) "Танымал сұрақтарға жауаптар" else "Ответы на популярные вопросы"
+    val contactSupportDescription: String get() = if (currentLanguage.value == Language.KAZAKH) "Бізге жазыңыз, біз көмектесеміз" else "Напишите нам, и мы поможем"
+    val termsDescription: String get() = if (currentLanguage.value == Language.KAZAKH) "Сервисті пайдалану шарттары" else "Условия использования сервиса"
+    val aboutDescription: String get() = if (currentLanguage.value == Language.KAZAKH) "Нұсқа 1.0.0 • Құпиялылық саясаты" else "Версия 1.0.0 • Политика конфиденциальности"
+    val contactInformation: String get() = if (currentLanguage.value == Language.KAZAKH) "Байланыс ақпараты" else "Контактная информация"
+    val daily: String get() = if (currentLanguage.value == Language.KAZAKH) "Күн сайын" else "Ежедневно"
+
+    // Contact Support
+    val writeToUs: String get() = if (currentLanguage.value == Language.KAZAKH) "Бізге жазыңыз" else "Напишите нам"
+    val describeProblem: String get() = if (currentLanguage.value == Language.KAZAKH) "Мәселеңізді сипаттаңыз, біз жақын арада жауап береміз" else "Опишите вашу проблему, и мы ответим в ближайшее время"
+    val topic: String get() = if (currentLanguage.value == Language.KAZAKH) "Өтініш тақырыбы" else "Тема обращения"
+    val selectTopic: String get() = if (currentLanguage.value == Language.KAZAKH) "Тақырыпты таңдаңыз" else "Выберите тему"
+    val message: String get() = if (currentLanguage.value == Language.KAZAKH) "Хабарлама" else "Сообщение"
+    val describeProblemDetailed: String get() = if (currentLanguage.value == Language.KAZAKH) "Мәселеңізді толығырақ сипаттаңыз..." else "Опишите вашу проблему подробнее..."
+    val send: String get() = if (currentLanguage.value == Language.KAZAKH) "Жіберу" else "Отправить"
+    val messageSent: String get() = if (currentLanguage.value == Language.KAZAKH) "Хабарлама жіберілді!" else "Сообщение отправлено!"
+    val weWillReply: String get() = if (currentLanguage.value == Language.KAZAKH) "Біз сізге жауап береміз" else "Мы ответим вам на"
+    val pleaseWriteMessage: String get() = if (currentLanguage.value == Language.KAZAKH) "Хабарлама жазыңыз" else "Пожалуйста, напишите сообщение"
+
+    // Reviews
+    val noReviews: String get() = if (currentLanguage.value == Language.KAZAKH) "Пікірлер жоқ" else "Нет отзывов"
+    val yourReviewsWillAppear: String get() = if (currentLanguage.value == Language.KAZAKH) "Тағамдар туралы пікірлеріңіз осында көрсетіледі" else "Ваши отзывы о блюдах будут отображаться здесь"
+    val deleteReviewTitle: String get() = if (currentLanguage.value == Language.KAZAKH) "Пікірді жою" else "Удалить отзыв"
+    val deleteReviewConfirm: String get() = if (currentLanguage.value == Language.KAZAKH) "Бұл пікірді жойғыңыз келетініне сенімдісіз бе?" else "Вы уверены, что хотите удалить этот отзыв?"
+    val reviewDeleted: String get() = if (currentLanguage.value == Language.KAZAKH) "Пікір жойылды" else "Отзыв удален"
+    val reviewUpdated: String get() = if (currentLanguage.value == Language.KAZAKH) "Пікір жаңартылды" else "Отзыв обновлен"
+    val errorUpdating: String get() = if (currentLanguage.value == Language.KAZAKH) "Жаңарту кезінде қате" else "Ошибка при обновлении"
+    val errorDeleting: String get() = if (currentLanguage.value == Language.KAZAKH) "Жою кезінде қате" else "Ошибка при удалении"
+    val yourRating: String get() = if (currentLanguage.value == Language.KAZAKH) "Сіздің бағаңыз" else "Ваша оценка"
+    val yourComment: String get() = if (currentLanguage.value == Language.KAZAKH) "Сіздің пікіріңіз" else "Ваш комментарий"
+    val shareImpressions: String get() = if (currentLanguage.value == Language.KAZAKH) "Әсерлеріңізбен бөлісіңіз..." else "Расскажите о ваших впечатлениях..."
+    val veryBad: String get() = if (currentLanguage.value == Language.KAZAKH) "Өте нашар" else "Очень плохо"
+    val bad: String get() = if (currentLanguage.value == Language.KAZAKH) "Нашар" else "Плохо"
+    val normal: String get() = if (currentLanguage.value == Language.KAZAKH) "Қалыпты" else "Нормально"
+    val good: String get() = if (currentLanguage.value == Language.KAZAKH) "Жақсы" else "Хорошо"
+    val excellent: String get() = if (currentLanguage.value == Language.KAZAKH) "Өте жақсы" else "Отлично"
+    val deleteReviewPermanently: String get() = if (currentLanguage.value == Language.KAZAKH) "Бұл әрекетті болдырмау мүмкін емес." else "Это действие нельзя отменить."
+    val loadingReviews: String get() = if (currentLanguage.value == Language.KAZAKH) "Пікірлер жүктелуде..." else "Загрузка отзывов..."
+    val reviews_one: String get() = if (currentLanguage.value == Language.KAZAKH) "1 пікір" else "1 отзыв"
+    val reviews_few: String get() = if (currentLanguage.value == Language.KAZAKH) "пікір" else "отзыва"
+    val reviews_many: String get() = if (currentLanguage.value == Language.KAZAKH) "пікір" else "отзывов"
+    val date: String get() = if (currentLanguage.value == Language.KAZAKH) "Күні" else "Дата"
+
+    // About
+    val aboutUs: String get() = if (currentLanguage.value == Language.KAZAKH) "Біз туралы" else "О нас"
+    val aboutContent: String get() = if (currentLanguage.value == Language.KAZAKH)
+        "FastBite - бұл сіздің қалаңыздағы ең үздік мейрамханалардан тағам жеткізу сервисі." else
+        "FastBite - это сервис доставки еды из лучших ресторанов вашего города."
+    val ourMission: String get() = if (currentLanguage.value == Language.KAZAKH) "Біздің миссиямыз" else "Наша миссия"
+    val missionContent: String get() = if (currentLanguage.value == Language.KAZAKH)
+        "Дәмді тағамды кез келген уақытта әркімге қолжетімді ету." else
+        "Делать вкусную еду доступной каждому в любое время."
+    val contacts: String get() = if (currentLanguage.value == Language.KAZAKH) "Байланыстар" else "Контакты"
+    val version: String get() = if (currentLanguage.value == Language.KAZAKH) "Нұсқа" else "Версия"
+    val allRightsReserved: String get() = if (currentLanguage.value == Language.KAZAKH)
+        "© 2024 FastBite. Барлық құқықтар қорғалған." else
+        "© 2024 FastBite. Все права защищены."
+}
+
+// ==================== КОМПОНЕНТ ЗВЕЗД ====================
 
 @Composable
 fun RatingStarsVisual(
@@ -68,47 +223,39 @@ fun RatingStarsVisual(
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         modifier = modifier
     ) {
-        // Округляем рейтинг до ближайшего целого для отображения звезд
-        // 1 -> 1 звезда, 2 -> 2 звезды, и т.д.
         val fullStars = rating.toInt()
-
-        // Проверяем, есть ли половина звезды (если дробная часть >= 0.5)
         val hasHalfStar = (rating - fullStars) >= 0.5
 
-        // Рисуем закрашенные (золотые) звезды
         repeat(fullStars) {
             Icon(
                 Icons.Filled.Star,
                 contentDescription = null,
-                tint = Color(0xFFFFC107), // Золотой цвет
+                tint = Color(0xFFFFC107),
                 modifier = Modifier.size(starSize)
             )
         }
 
-        // Рисуем половинчатую звезду если нужно
         if (hasHalfStar) {
             Icon(
                 Icons.Filled.StarHalf,
                 contentDescription = null,
-                tint = Color(0xFFFFC107), // Золотой цвет
+                tint = Color(0xFFFFC107),
                 modifier = Modifier.size(starSize)
             )
         }
 
-        // Рисуем пустые (серые) звезды
         val emptyStars = 5 - fullStars - if (hasHalfStar) 1 else 0
         repeat(emptyStars) {
             Icon(
-                Icons.Outlined.StarBorder, // Используем StarBorder для пустых звезд
+                Icons.Outlined.StarBorder,
                 contentDescription = null,
-                tint = Color.Gray, // Серый цвет
+                tint = Color.Gray,
                 modifier = Modifier.size(starSize)
             )
         }
     }
 }
 
-// Альтернативный вариант с отображением рейтинга текстом
 @Composable
 fun RatingStarsWithText(
     rating: Double,
@@ -129,6 +276,7 @@ fun RatingStarsWithText(
         )
     }
 }
+
 // ==================== MAIN PROFILE SCREEN ====================
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -137,7 +285,7 @@ fun ProfileScreen(
     userEmail: String,
     onLogout: () -> Unit,
     onNavigateToOrders: () -> Unit,
-    onNavigateToDish: (String) -> Unit = {}  // Добавлен параметр для перехода к блюду
+    onNavigateToDish: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val db = FirebaseFirestore.getInstance()
@@ -158,8 +306,8 @@ fun ProfileScreen(
 
     var notificationsEnabled by remember { mutableStateOf(true) }
     var emailEnabled by remember { mutableStateOf(false) }
-    var language by remember { mutableStateOf("Русский") }
-    var theme by remember { mutableStateOf("Светлая") }
+    var currentLanguage by remember { mutableStateOf(Language.RUSSIAN) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
 
     fun navigateTo(screen: ProfileScreenType) {
         previousScreens = previousScreens + currentScreen
@@ -199,21 +347,55 @@ fun ProfileScreen(
         }
     }
 
+    // Language selection dialog
+    if (showLanguageDialog) {
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            title = { Text(Strings.language_setting, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Language.values().forEach { language ->
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                currentLanguage = language
+                                Strings.setLanguage(language)
+                                showLanguageDialog = false
+                            },
+                            color = if (currentLanguage == language) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                        ) {
+                            Text(
+                                text = language.displayName,
+                                modifier = Modifier.padding(16.dp),
+                                color = if (currentLanguage == language) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLanguageDialog = false }) {
+                    Text(Strings.cancel)
+                }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
+    }
+
     if (showDeleteDialog && addressToDelete != null) {
         AlertDialog(
             onDismissRequest = {
                 showDeleteDialog = false
                 addressToDelete = null
             },
-            title = { Text("Удалить адрес", fontWeight = FontWeight.Bold) },
-            text = { Text("Вы уверены, что хотите удалить адрес:\n${addressToDelete!!.address}?") },
+            title = { Text(Strings.deleteAddressTitle, fontWeight = FontWeight.Bold) },
+            text = { Text("${Strings.deleteAddressConfirm}\n${addressToDelete!!.address}?") },
             confirmButton = {
                 TextButton(
                     onClick = {
                         coroutineScope.launch {
                             try {
                                 deleteAddress(userEmail, addressToDelete!!.id, db)
-                                Toast.makeText(context, "Адрес удален", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, Strings.addressDeleted, Toast.LENGTH_SHORT).show()
                                 loadAddresses(userEmail, db) { addresses = it }
                             } catch (e: Exception) {
                                 e.printStackTrace()
@@ -224,13 +406,13 @@ fun ProfileScreen(
                         }
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text("Удалить") }
+                ) { Text(Strings.delete) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     showDeleteDialog = false
                     addressToDelete = null
-                }) { Text("Отмена") }
+                }) { Text(Strings.cancel) }
             },
             shape = RoundedCornerShape(28.dp)
         )
@@ -242,19 +424,19 @@ fun ProfileScreen(
                 title = {
                     Text(
                         when (currentScreen) {
-                            ProfileScreenType.Main -> "Профиль"
-                            ProfileScreenType.Settings -> "Настройки"
-                            ProfileScreenType.EditProfile -> "Редактировать профиль"
-                            ProfileScreenType.Addresses -> "Адреса доставки"
-                            ProfileScreenType.AddAddress -> "Добавить адрес"
-                            ProfileScreenType.EditAddress -> "Редактировать адрес"
-                            ProfileScreenType.Help -> "Помощь и поддержка"
-                            ProfileScreenType.FAQ -> "Часто задаваемые вопросы"
-                            ProfileScreenType.ContactSupport -> "Связаться с поддержкой"
-                            ProfileScreenType.TermsAndConditions -> "Правила и условия"
-                            ProfileScreenType.AboutApp -> "О приложении"
-                            ProfileScreenType.MyReviews -> "Мои отзывы"
-                            ProfileScreenType.EditReview -> "Редактировать отзыв"
+                            ProfileScreenType.Main -> Strings.profile
+                            ProfileScreenType.Settings -> Strings.settings
+                            ProfileScreenType.EditProfile -> Strings.editProfile
+                            ProfileScreenType.Addresses -> Strings.deliveryAddresses
+                            ProfileScreenType.AddAddress -> Strings.addAddress
+                            ProfileScreenType.EditAddress -> Strings.editAddress
+                            ProfileScreenType.Help -> Strings.helpAndSupport
+                            ProfileScreenType.FAQ -> Strings.faq
+                            ProfileScreenType.ContactSupport -> Strings.contactSupport
+                            ProfileScreenType.TermsAndConditions -> Strings.termsAndConditions
+                            ProfileScreenType.AboutApp -> Strings.aboutApp
+                            ProfileScreenType.MyReviews -> Strings.myReviews
+                            ProfileScreenType.EditReview -> Strings.editReview
                         },
                         fontWeight = FontWeight.Bold,
                         fontSize = 22.sp
@@ -263,7 +445,7 @@ fun ProfileScreen(
                 navigationIcon = {
                     if (currentScreen != ProfileScreenType.Main) {
                         IconButton(onClick = { navigateBack() }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                            Icon(Icons.Default.ArrowBack, contentDescription = Strings.back)
                         }
                     }
                 },
@@ -271,7 +453,7 @@ fun ProfileScreen(
                     when (currentScreen) {
                         ProfileScreenType.Main -> {
                             IconButton(onClick = { navigateTo(ProfileScreenType.Settings) }) {
-                                Icon(Icons.Outlined.Settings, contentDescription = "Настройки")
+                                Icon(Icons.Outlined.Settings, contentDescription = Strings.settings)
                             }
                         }
                         else -> {}
@@ -314,12 +496,10 @@ fun ProfileScreen(
                             userEmail = userEmail,
                             notificationsEnabled = notificationsEnabled,
                             emailEnabled = emailEnabled,
-                            language = language,
-                            theme = theme,
+                            currentLanguage = currentLanguage,
                             onNotificationsChange = { notificationsEnabled = it },
                             onEmailChange = { emailEnabled = it },
-                            onLanguageChange = { language = it },
-                            onThemeChange = { theme = it },
+                            onLanguageClick = { showLanguageDialog = true },
                             onEditProfile = { navigateTo(ProfileScreenType.EditProfile) },
                             onLogout = onLogout
                         )
@@ -355,7 +535,7 @@ fun ProfileScreen(
                                 coroutineScope.launch {
                                     try {
                                         setDefaultAddress(userEmail, address.id, db)
-                                        Toast.makeText(context, "Основной адрес изменен", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, Strings.defaultAddressChanged, Toast.LENGTH_SHORT).show()
                                         loadAddresses(userEmail, db) { addresses = it }
                                     } catch (e: Exception) {
                                         e.printStackTrace()
@@ -371,7 +551,7 @@ fun ProfileScreen(
                                 coroutineScope.launch {
                                     try {
                                         addAddress(userEmail, newAddress, db)
-                                        Toast.makeText(context, "Адрес добавлен", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, Strings.addressAdded, Toast.LENGTH_SHORT).show()
                                         loadAddresses(userEmail, db) { addresses = it }
                                         navigateBack()
                                     } catch (e: Exception) {
@@ -389,7 +569,7 @@ fun ProfileScreen(
                                     coroutineScope.launch {
                                         try {
                                             updateAddress(userEmail, updatedAddress, db)
-                                            Toast.makeText(context, "Адрес обновлен", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, Strings.addressUpdated, Toast.LENGTH_SHORT).show()
                                             loadAddresses(userEmail, db) { addresses = it }
                                             navigateBack()
                                             selectedAddressForEdit = null
@@ -437,11 +617,11 @@ fun ProfileScreen(
                                     coroutineScope.launch {
                                         try {
                                             updateReviewInFirebase(review.id, rating, comment)
-                                            Toast.makeText(context, "Отзыв обновлен", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, Strings.reviewUpdated, Toast.LENGTH_SHORT).show()
                                             navigateBack()
                                             selectedReviewForEdit = null
                                         } catch (e: Exception) {
-                                            Toast.makeText(context, "Ошибка при обновлении", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, Strings.errorUpdating, Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 },
@@ -449,11 +629,11 @@ fun ProfileScreen(
                                     coroutineScope.launch {
                                         try {
                                             deleteReviewFromFirebase(review.id)
-                                            Toast.makeText(context, "Отзыв удален", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, Strings.reviewDeleted, Toast.LENGTH_SHORT).show()
                                             navigateBack()
                                             selectedReviewForEdit = null
                                         } catch (e: Exception) {
-                                            Toast.makeText(context, "Ошибка при удалении", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, Strings.errorDeleting, Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 },
@@ -702,37 +882,37 @@ fun MainProfileContent(
 
         ProfileMenuItem(
             icon = Icons.Outlined.ShoppingBag,
-            title = "Мои заказы",
-            subtitle = "История и статус заказов",
+            title = Strings.myOrders,
+            subtitle = Strings.orderHistory,
             onClick = onNavigateToOrders
         )
         ProfileMenuItem(
             icon = Icons.Outlined.RateReview,
-            title = "Мои отзывы",
-            subtitle = "Ваши отзывы о блюдах",
+            title = Strings.myReviews,
+            subtitle = Strings.yourReviews,
             onClick = onNavigateToReviews
         )
         ProfileMenuItem(
             icon = Icons.Outlined.LocationOn,
-            title = "Адреса доставки",
+            title = Strings.deliveryAddresses,
             subtitle = when {
-                addresses.isEmpty() -> "Добавьте адрес"
-                addresses.size == 1 -> "1 адрес"
-                addresses.size in 2..4 -> "${addresses.size} адреса"
-                else -> "${addresses.size} адресов"
+                addresses.isEmpty() -> Strings.addAddressForQuickOrder.take(20) + "..."
+                addresses.size == 1 -> Strings.reviews_one
+                addresses.size in 2..4 -> "${addresses.size} ${Strings.reviews_few}"
+                else -> "${addresses.size} ${Strings.reviews_many}"
             },
             onClick = onNavigateToAddresses
         )
         ProfileMenuItem(
             icon = Icons.Outlined.Payment,
-            title = "Способы оплаты",
-            subtitle = "Карты, наличные",
+            title = Strings.paymentMethods,
+            subtitle = Strings.cardsCash,
             onClick = { }
         )
         ProfileMenuItem(
             icon = Icons.Outlined.Help,
-            title = "Помощь",
-            subtitle = "FAQ и поддержка",
+            title = Strings.help,
+            subtitle = Strings.faqAndSupport,
             onClick = onNavigateToHelp
         )
 
@@ -773,7 +953,7 @@ fun ProfileHeader(userName: String, userEmail: String, userPhone: String) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = if (userName.isNotBlank()) userName else "Пользователь",
+                    text = if (userName.isNotBlank()) userName else Strings.user,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -841,39 +1021,72 @@ fun ProfileMenuItem(
 
 @Composable
 fun SettingsContent(
-    userName: String, userPhone: String, userEmail: String,
-    notificationsEnabled: Boolean, emailEnabled: Boolean, language: String, theme: String,
-    onNotificationsChange: (Boolean) -> Unit, onEmailChange: (Boolean) -> Unit,
-    onLanguageChange: (String) -> Unit, onThemeChange: (String) -> Unit,
-    onEditProfile: () -> Unit, onLogout: () -> Unit
+    userName: String,
+    userPhone: String,
+    userEmail: String,
+    notificationsEnabled: Boolean,
+    emailEnabled: Boolean,
+    currentLanguage: Language,
+    onNotificationsChange: (Boolean) -> Unit,
+    onEmailChange: (Boolean) -> Unit,
+    onLanguageClick: () -> Unit,
+    onEditProfile: () -> Unit,
+    onLogout: () -> Unit
 ) {
     var showLogoutConfirm by remember { mutableStateOf(false) }
 
     if (showLogoutConfirm) {
         AlertDialog(
             onDismissRequest = { showLogoutConfirm = false },
-            title = { Text("Выход из аккаунта", fontWeight = FontWeight.Bold) },
-            text = { Text("Вы уверены, что хотите выйти?", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            title = { Text(Strings.logoutConfirm, fontWeight = FontWeight.Bold) },
+            text = { Text(Strings.logoutConfirmMessage, color = MaterialTheme.colorScheme.onSurfaceVariant) },
             confirmButton = {
                 TextButton(onClick = { showLogoutConfirm = false; onLogout() }, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
-                    Text("Выйти")
+                    Text(Strings.exit)
                 }
             },
-            dismissButton = { TextButton(onClick = { showLogoutConfirm = false }) { Text("Отмена") } },
+            dismissButton = { TextButton(onClick = { showLogoutConfirm = false }) { Text(Strings.cancel) } },
             shape = RoundedCornerShape(28.dp)
         )
     }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        SettingsItem(icon = Icons.Outlined.Person, title = "Редактировать профиль", subtitle = if (userName.isNotBlank() || userPhone.isNotBlank()) "$userName • $userPhone" else "Заполните информацию", onClick = onEditProfile)
+        SettingsItem(
+            icon = Icons.Outlined.Person,
+            title = Strings.editProfile,
+            subtitle = if (userName.isNotBlank() || userPhone.isNotBlank()) "$userName • $userPhone" else Strings.fillInformation,
+            onClick = onEditProfile
+        )
         Divider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
-        SettingsSwitchItem(icon = Icons.Outlined.Notifications, title = "Уведомления", subtitle = "Получать уведомления о заказах", checked = notificationsEnabled, onCheckedChange = onNotificationsChange)
-        SettingsSwitchItem(icon = Icons.Outlined.Email, title = "Email-рассылка", subtitle = "Получать новости и акции", checked = emailEnabled, onCheckedChange = onEmailChange)
+        SettingsSwitchItem(
+            icon = Icons.Outlined.Notifications,
+            title = Strings.notifications,
+            subtitle = Strings.receiveOrderNotifications,
+            checked = notificationsEnabled,
+            onCheckedChange = onNotificationsChange
+        )
+        SettingsSwitchItem(
+            icon = Icons.Outlined.Email,
+            title = Strings.emailNewsletter,
+            subtitle = Strings.receiveNewsAndOffers,
+            checked = emailEnabled,
+            onCheckedChange = onEmailChange
+        )
         Divider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
-        SettingsSelectItem(icon = Icons.Outlined.Language, title = "Язык", value = language, onClick = {})
-        SettingsSelectItem(icon = Icons.Outlined.DarkMode, title = "Тема", value = theme, onClick = {})
+        SettingsSelectItem(
+            icon = Icons.Outlined.Language,
+            title = Strings.language_setting,
+            value = currentLanguage.displayName,
+            onClick = onLanguageClick
+        )
         Divider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
-        SettingsItem(icon = Icons.Outlined.Logout, title = "Выйти из аккаунта", subtitle = "Завершить сеанс", onClick = { showLogoutConfirm = true }, isDestructive = true)
+        SettingsItem(
+            icon = Icons.Outlined.Logout,
+            title = Strings.logout,
+            subtitle = Strings.endSession,
+            onClick = { showLogoutConfirm = true },
+            isDestructive = true
+        )
     }
 }
 
@@ -931,11 +1144,42 @@ fun EditProfileContent(userName: String, userPhone: String, userEmail: String, o
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
-            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Имя") }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(16.dp), leadingIcon = { Icon(Icons.Outlined.Person, null, tint = MaterialTheme.colorScheme.primary) })
-            OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Телефон") }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(16.dp), leadingIcon = { Icon(Icons.Outlined.Phone, null, tint = MaterialTheme.colorScheme.primary) })
-            OutlinedTextField(value = userEmail, onValueChange = {}, label = { Text("Email") }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(16.dp), enabled = false, leadingIcon = { Icon(Icons.Outlined.Email, null, tint = MaterialTheme.colorScheme.primary) })
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(Strings.name) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                leadingIcon = { Icon(Icons.Outlined.Person, null, tint = MaterialTheme.colorScheme.primary) }
+            )
+            OutlinedTextField(
+                value = phone,
+                onValueChange = { phone = it },
+                label = { Text(Strings.phone) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                leadingIcon = { Icon(Icons.Outlined.Phone, null, tint = MaterialTheme.colorScheme.primary) }
+            )
+            OutlinedTextField(
+                value = userEmail,
+                onValueChange = {},
+                label = { Text(Strings.email) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                enabled = false,
+                leadingIcon = { Icon(Icons.Outlined.Email, null, tint = MaterialTheme.colorScheme.primary) }
+            )
         }
-        Button(onClick = { onSave(name, phone) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) { Text("Сохранить") }
+        Button(
+            onClick = { onSave(name, phone) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(Strings.save)
+        }
     }
 }
 
@@ -948,20 +1192,31 @@ fun AddressesContent(
     onSetDefaultAddress: (Address) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(text = "Сохраненные адреса", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 16.dp))
+        Text(
+            text = Strings.savedAddresses,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
         if (addresses.isEmpty()) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Outlined.LocationOn, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
-                    Text("У вас пока нет сохраненных адресов", fontSize = 16.sp, color = MaterialTheme.colorScheme.outline)
-                    Text("Добавьте адрес для быстрого оформления заказа", fontSize = 14.sp, color = MaterialTheme.colorScheme.outline, textAlign = TextAlign.Center)
+                    Text(Strings.noAddresses, fontSize = 16.sp, color = MaterialTheme.colorScheme.outline)
+                    Text(Strings.addAddressForQuickOrder, fontSize = 14.sp, color = MaterialTheme.colorScheme.outline, textAlign = TextAlign.Center)
                 }
             }
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
                 items(addresses) { address ->
-                    AddressCard(address = address, onEdit = { onEditAddress(address) }, onDelete = { onDeleteAddress(address) }, onSetDefault = { onSetDefaultAddress(address) })
+                    AddressCard(
+                        address = address,
+                        onEdit = { onEditAddress(address) },
+                        onDelete = { onDeleteAddress(address) },
+                        onSetDefault = { onSetDefaultAddress(address) }
+                    )
                 }
             }
         }
@@ -970,7 +1225,7 @@ fun AddressesContent(
         Button(onClick = onAddAddress, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
             Icon(Icons.Outlined.Add, null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Добавить новый адрес")
+            Text(Strings.addAddressButton)
         }
     }
 }
@@ -985,8 +1240,12 @@ fun AddressCard(address: Address, onEdit: () -> Unit, onDelete: () -> Unit, onSe
                     Text(text = address.address, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) { Icon(Icons.Outlined.Edit, "Редактировать", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
-                    IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) { Icon(Icons.Outlined.Delete, "Удалить", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp)) }
+                    IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
+                        Icon(Icons.Outlined.Edit, Strings.edit, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                    }
+                    IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                        Icon(Icons.Outlined.Delete, Strings.delete, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                    }
                 }
             }
             val details = mutableListOf<String>()
@@ -995,13 +1254,26 @@ fun AddressCard(address: Address, onEdit: () -> Unit, onDelete: () -> Unit, onSe
             if (address.floor.isNotBlank()) details.add("эт. ${address.floor}")
             if (address.intercom.isNotBlank()) details.add("домофон ${address.intercom}")
             if (details.isNotEmpty()) {
-                Text(text = details.joinToString(" • "), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.padding(start = 36.dp, top = 4.dp))
+                Text(
+                    text = details.joinToString(" • "),
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(start = 36.dp, top = 4.dp)
+                )
             }
-            Row(modifier = Modifier.fillMaxWidth().padding(start = 36.dp, top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 36.dp, top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 if (address.isDefault) {
-                    Badge(containerColor = MaterialTheme.colorScheme.primary) { Text("Основной адрес", fontSize = 10.sp, color = MaterialTheme.colorScheme.onPrimary) }
+                    Badge(containerColor = MaterialTheme.colorScheme.primary) {
+                        Text(Strings.defaultAddress, fontSize = 10.sp, color = MaterialTheme.colorScheme.onPrimary)
+                    }
                 } else {
-                    TextButton(onClick = onSetDefault, modifier = Modifier.height(32.dp)) { Text("Сделать основным", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary) }
+                    TextButton(onClick = onSetDefault, modifier = Modifier.height(32.dp)) {
+                        Text(Strings.setAsDefault, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
         }
@@ -1018,27 +1290,104 @@ fun AddEditAddressContent(address: Address?, onSave: (Address) -> Unit) {
     var isDefault by remember { mutableStateOf(address?.isDefault ?: false) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(text = if (address == null) "Новый адрес" else "Редактировать адрес", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 24.dp))
+        Text(
+            text = if (address == null) Strings.newAddress else Strings.editAddress,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-            OutlinedTextField(value = addressText, onValueChange = { addressText = it }, label = { Text("Адрес *") }, placeholder = { Text("Город, улица, дом") }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(16.dp), isError = addressText.isBlank(), leadingIcon = { Icon(Icons.Outlined.LocationOn, null, tint = MaterialTheme.colorScheme.primary) })
-            if (addressText.isBlank()) { Text(text = "Адрес обязателен для заполнения", color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.padding(start = 16.dp)) }
-            OutlinedTextField(value = apartment, onValueChange = { apartment = it }, label = { Text("Квартира/офис") }, placeholder = { Text("Необязательно") }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(16.dp))
-            OutlinedTextField(value = entrance, onValueChange = { entrance = it }, label = { Text("Подъезд") }, placeholder = { Text("Необязательно") }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(16.dp))
-            OutlinedTextField(value = floor, onValueChange = { floor = it }, label = { Text("Этаж") }, placeholder = { Text("Необязательно") }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(16.dp))
-            OutlinedTextField(value = intercom, onValueChange = { intercom = it }, label = { Text("Домофон") }, placeholder = { Text("Необязательно") }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(16.dp))
+            OutlinedTextField(
+                value = addressText,
+                onValueChange = { addressText = it },
+                label = { Text(Strings.addressRequired) },
+                placeholder = { Text(Strings.addressPlaceholder) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                isError = addressText.isBlank(),
+                leadingIcon = { Icon(Icons.Outlined.LocationOn, null, tint = MaterialTheme.colorScheme.primary) }
+            )
+            if (addressText.isBlank()) {
+                Text(
+                    text = Strings.addressRequiredError,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 16.dp)
+                )
+            }
+            OutlinedTextField(
+                value = apartment,
+                onValueChange = { apartment = it },
+                label = { Text(Strings.apartment) },
+                placeholder = { Text(Strings.optional) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp)
+            )
+            OutlinedTextField(
+                value = entrance,
+                onValueChange = { entrance = it },
+                label = { Text(Strings.entrance) },
+                placeholder = { Text(Strings.optional) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp)
+            )
+            OutlinedTextField(
+                value = floor,
+                onValueChange = { floor = it },
+                label = { Text(Strings.floor) },
+                placeholder = { Text(Strings.optional) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp)
+            )
+            OutlinedTextField(
+                value = intercom,
+                onValueChange = { intercom = it },
+                label = { Text(Strings.intercom) },
+                placeholder = { Text(Strings.optional) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp)
+            )
 
-            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Сделать основным адресом", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                Switch(checked = isDefault, onCheckedChange = { isDefault = it }, colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.primary))
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(Strings.makeDefaultAddress, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                Switch(
+                    checked = isDefault,
+                    onCheckedChange = { isDefault = it },
+                    colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.primary)
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
         Button(
-            onClick = { onSave(Address(id = address?.id ?: System.currentTimeMillis().toString(), address = addressText, apartment = apartment, entrance = entrance, floor = floor, intercom = intercom, isDefault = isDefault)) },
-            modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), enabled = addressText.isNotBlank()
-        ) { Text(if (address == null) "Сохранить" else "Обновить") }
+            onClick = {
+                onSave(Address(
+                    id = address?.id ?: System.currentTimeMillis().toString(),
+                    address = addressText,
+                    apartment = apartment,
+                    entrance = entrance,
+                    floor = floor,
+                    intercom = intercom,
+                    isDefault = isDefault
+                ))
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            enabled = addressText.isNotBlank()
+        ) {
+            Text(if (address == null) Strings.save else Strings.update)
+        }
     }
 }
 
@@ -1052,24 +1401,72 @@ fun HelpContent(
     onNavigateToAbout: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        Text(text = "Чем мы можем помочь?", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 8.dp))
-        Text(text = "Выберите интересующий вас раздел", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 24.dp))
+        Text(
+            text = Strings.howCanWeHelp,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            text = Strings.chooseSection,
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
 
-        HelpCard(icon = Icons.Outlined.QuestionAnswer, title = "Часто задаваемые вопросы", description = "Ответы на популярные вопросы", color = MaterialTheme.colorScheme.primary, onClick = onNavigateToFAQ)
+        HelpCard(
+            icon = Icons.Outlined.QuestionAnswer,
+            title = Strings.faq,
+            description = Strings.faqDescription,
+            color = MaterialTheme.colorScheme.primary,
+            onClick = onNavigateToFAQ
+        )
         Spacer(modifier = Modifier.height(12.dp))
-        HelpCard(icon = Icons.Outlined.SupportAgent, title = "Связаться с поддержкой", description = "Напишите нам, и мы поможем", color = MaterialTheme.colorScheme.tertiary, onClick = onNavigateToContactSupport)
+        HelpCard(
+            icon = Icons.Outlined.SupportAgent,
+            title = Strings.contactSupport,
+            description = Strings.contactSupportDescription,
+            color = MaterialTheme.colorScheme.tertiary,
+            onClick = onNavigateToContactSupport
+        )
         Spacer(modifier = Modifier.height(12.dp))
-        HelpCard(icon = Icons.Outlined.Description, title = "Правила и условия", description = "Условия использования сервиса", color = MaterialTheme.colorScheme.secondary, onClick = onNavigateToTerms)
+        HelpCard(
+            icon = Icons.Outlined.Description,
+            title = Strings.termsAndConditions,
+            description = Strings.termsDescription,
+            color = MaterialTheme.colorScheme.secondary,
+            onClick = onNavigateToTerms
+        )
         Spacer(modifier = Modifier.height(12.dp))
-        HelpCard(icon = Icons.Outlined.Info, title = "О приложении", description = "Версия 1.0.0 • Политика конфиденциальности", color = MaterialTheme.colorScheme.outline, onClick = onNavigateToAbout)
+        HelpCard(
+            icon = Icons.Outlined.Info,
+            title = Strings.aboutApp,
+            description = Strings.aboutDescription,
+            color = MaterialTheme.colorScheme.outline,
+            onClick = onNavigateToAbout
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
-        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Text(text = "Контактная информация", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 12.dp))
+                Text(
+                    text = Strings.contactInformation,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
                 ContactInfoRow(icon = Icons.Outlined.Email, text = "support@fastbite.com")
                 ContactInfoRow(icon = Icons.Outlined.Phone, text = "+7 (999) 123-45-67")
-                ContactInfoRow(icon = Icons.Outlined.Schedule, text = "Ежедневно с 10:00 до 22:00")
+                ContactInfoRow(
+                    icon = Icons.Outlined.Schedule,
+                    text = "${Strings.daily} 10:00 - 22:00"
+                )
             }
         }
     }
@@ -1077,9 +1474,17 @@ fun HelpContent(
 
 @Composable
 fun HelpCard(icon: ImageVector, title: String, description: String, color: Color, onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(50.dp).clip(CircleShape).background(color.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier.size(50.dp).clip(CircleShape).background(color.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
@@ -1104,36 +1509,106 @@ fun ContactInfoRow(icon: ImageVector, text: String) {
 @Composable
 fun FAQContent() {
     val faqItems = listOf(
-        FAQItem("Как сделать заказ?", "Выберите ресторан, добавьте блюда в корзину, укажите адрес доставки и выберите способ оплаты."),
-        FAQItem("Сколько времени занимает доставка?", "Среднее время доставки составляет 30-60 минут."),
-        FAQItem("Как оплатить заказ?", "Наличными курьеру, банковской картой при получении или онлайн."),
-        FAQItem("Можно ли изменить или отменить заказ?", "Да, до того, как ресторан начал его готовить."),
-        FAQItem("Что делать, если заказ не привезли вовремя?", "Свяжитесь с поддержкой через чат или по телефону."),
-        FAQItem("Как оставить отзыв о блюде?", "После получения заказа в разделе 'Мои заказы'."),
-        FAQItem("Безопасно ли платить онлайн?", "Да, все платежи защищены шифрованием."),
-        FAQItem("Как изменить личные данные?", "Профиль → Настройки → Редактировать профиль.")
+        FAQItem(
+            "Как сделать заказ?",
+            "Выберите ресторан, добавьте блюда в корзину, укажите адрес доставки и выберите способ оплаты.",
+            "Тапсырысты қалай жасауға болады?",
+            "Мейрамхананы таңдаңыз, себетке тағамдарды қосыңыз, жеткізу мекенжайын көрсетіңіз және төлем тәсілін таңдаңыз."
+        ),
+        FAQItem(
+            "Сколько времени занимает доставка?",
+            "Среднее время доставки составляет 30-60 минут.",
+            "Жеткізу қанша уақытты алады?",
+            "Орташа жеткізу уақыты 30-60 минутты құрайды."
+        ),
+        FAQItem(
+            "Как оплатить заказ?",
+            "Наличными курьеру, банковской картой при получении или онлайн.",
+            "Тапсырысты қалай төлеуге болады?",
+            "Курьерге қолма-қол ақшамен, алған кезде банк картасымен немесе онлайн."
+        ),
+        FAQItem(
+            "Можно ли изменить или отменить заказ?",
+            "Да, до того, как ресторан начал его готовить.",
+            "Тапсырысты өзгертуге немесе болдырмауға бола ма?",
+            "Иә, мейрамхана оны дайындауды бастағанға дейін."
+        ),
+        FAQItem(
+            "Что делать, если заказ не привезли вовремя?",
+            "Свяжитесь с поддержкой через чат или по телефону.",
+            "Тапсырыс уақытында жеткізілмесе не істеу керек?",
+            "Чат арқылы немесе телефон арқылы қолдау қызметіне хабарласыңыз."
+        ),
+        FAQItem(
+            "Как оставить отзыв о блюде?",
+            "После получения заказа в разделе 'Мои заказы'.",
+            "Тағам туралы пікірді қалай қалдыруға болады?",
+            "Тапсырысты алғаннан кейін 'Менің тапсырыстарым' бөлімінде."
+        ),
+        FAQItem(
+            "Безопасно ли платить онлайн?",
+            "Да, все платежи защищены шифрованием.",
+            "Онлайн төлеу қауіпсіз бе?",
+            "Иә, барлық төлемдер шифрлаумен қорғалған."
+        ),
+        FAQItem(
+            "Как изменить личные данные?",
+            "Профиль → Настройки → Редактировать профиль.",
+            "Жеке деректерді қалай өзгертуге болады?",
+            "Профиль → Баптаулар → Профильді өңдеу."
+        )
     )
 
     var expandedIndex by remember { mutableStateOf(-1) }
+    val isKazakh = Strings.getLanguage() == Language.KAZAKH
 
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(faqItems.size) { index ->
-            FAQCard(item = faqItems[index], isExpanded = expandedIndex == index, onExpandChange = { expandedIndex = if (expandedIndex == index) -1 else index })
+            FAQCard(
+                item = faqItems[index],
+                isExpanded = expandedIndex == index,
+                isKazakh = isKazakh,
+                onExpandChange = { expandedIndex = if (expandedIndex == index) -1 else index }
+            )
         }
     }
 }
 
 @Composable
-fun FAQCard(item: FAQItem, isExpanded: Boolean, onExpandChange: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onExpandChange), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = if (isExpanded) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)) {
+fun FAQCard(item: FAQItem, isExpanded: Boolean, isKazakh: Boolean, onExpandChange: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onExpandChange),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isExpanded) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+        )
+    ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(text = item.question, fontSize = 16.sp, fontWeight = if (isExpanded) FontWeight.Bold else FontWeight.Medium, color = if (isExpanded) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-                Icon(if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, null, tint = if (isExpanded) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (isKazakh) item.questionKz else item.question,
+                    fontSize = 16.sp,
+                    fontWeight = if (isExpanded) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isExpanded) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    null,
+                    tint = if (isExpanded) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             if (isExpanded) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = item.answer, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
+                Text(
+                    text = if (isKazakh) item.answerKz else item.answer,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                )
             }
         }
     }
@@ -1145,70 +1620,230 @@ fun ContactSupportContent(userEmail: String, userName: String) {
     var message by remember { mutableStateOf("") }
     var selectedTopic by remember { mutableStateOf(SupportTopic.ORDER) }
     var showTopicDialog by remember { mutableStateOf(false) }
+    val isKazakh = Strings.getLanguage() == Language.KAZAKH
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(text = "Напишите нам", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 8.dp))
-        Text(text = "Опишите вашу проблему, и мы ответим в ближайшее время", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 24.dp))
+        Text(
+            text = Strings.writeToUs,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            text = Strings.describeProblem,
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
 
-        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
             Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Person, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = if (userName.isNotBlank()) userName else userEmail, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = if (userName.isNotBlank()) userName else userEmail,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Тема обращения", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 8.dp))
+        Text(
+            text = Strings.topic,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
 
-        Card(modifier = Modifier.fillMaxWidth().clickable { showTopicDialog = true }, shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
-            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(text = selectedTopic.title, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                Icon(Icons.Default.ArrowDropDown, "Выбрать тему", tint = MaterialTheme.colorScheme.primary)
+        Card(
+            modifier = Modifier.fillMaxWidth().clickable { showTopicDialog = true },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (isKazakh) selectedTopic.titleKz else selectedTopic.title,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Icon(Icons.Default.ArrowDropDown, Strings.selectTopic, tint = MaterialTheme.colorScheme.primary)
             }
         }
 
         if (showTopicDialog) {
-            AlertDialog(onDismissRequest = { showTopicDialog = false }, title = { Text("Выберите тему", fontWeight = FontWeight.Bold) }, text = {
-                Column { SupportTopic.values().forEach { topic ->
-                    Surface(modifier = Modifier.fillMaxWidth().clickable { selectedTopic = topic; showTopicDialog = false }, color = if (selectedTopic == topic) MaterialTheme.colorScheme.primaryContainer else Color.Transparent) {
-                        Text(text = topic.title, modifier = Modifier.padding(16.dp), color = if (selectedTopic == topic) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface)
+            AlertDialog(
+                onDismissRequest = { showTopicDialog = false },
+                title = { Text(Strings.selectTopic, fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        SupportTopic.values().forEach { topic ->
+                            Surface(
+                                modifier = Modifier.fillMaxWidth().clickable {
+                                    selectedTopic = topic
+                                    showTopicDialog = false
+                                },
+                                color = if (selectedTopic == topic) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                            ) {
+                                Text(
+                                    text = if (isKazakh) topic.titleKz else topic.title,
+                                    modifier = Modifier.padding(16.dp),
+                                    color = if (selectedTopic == topic) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
                     }
-                } }
-            }, confirmButton = { TextButton(onClick = { showTopicDialog = false }) { Text("Отмена") } }, shape = RoundedCornerShape(28.dp))
+                },
+                confirmButton = { TextButton(onClick = { showTopicDialog = false }) { Text(Strings.cancel) } },
+                shape = RoundedCornerShape(28.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
-        OutlinedTextField(value = message, onValueChange = { message = it }, label = { Text("Сообщение") }, placeholder = { Text("Опишите вашу проблему подробнее...") }, modifier = Modifier.fillMaxWidth().weight(1f), shape = RoundedCornerShape(16.dp), minLines = 8)
+        OutlinedTextField(
+            value = message,
+            onValueChange = { message = it },
+            label = { Text(Strings.message) },
+            placeholder = { Text(Strings.describeProblemDetailed) },
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            shape = RoundedCornerShape(16.dp),
+            minLines = 8
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = {
-            if (message.isNotBlank()) {
-                Toast.makeText(context, "Сообщение отправлено! Мы ответим вам на $userEmail", Toast.LENGTH_LONG).show()
-                message = ""
-            } else {
-                Toast.makeText(context, "Пожалуйста, напишите сообщение", Toast.LENGTH_SHORT).show()
-            }
-        }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), enabled = message.isNotBlank()) {
+        Button(
+            onClick = {
+                if (message.isNotBlank()) {
+                    Toast.makeText(context, "${Strings.messageSent} ${Strings.weWillReply} $userEmail", Toast.LENGTH_LONG).show()
+                    message = ""
+                } else {
+                    Toast.makeText(context, Strings.pleaseWriteMessage, Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            enabled = message.isNotBlank()
+        ) {
             Icon(Icons.Outlined.Send, null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Отправить")
+            Text(Strings.send)
         }
     }
 }
 
 @Composable
 fun TermsContent() {
+    val isKazakh = Strings.getLanguage() == Language.KAZAKH
+
     LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TermsSection(title = "1. Общие положения", icon = Icons.Outlined.Info, content = listOf("1.1. Используя приложение FastBite, вы соглашаетесь с настоящими Правилами.", "1.2. FastBite предоставляет платформу для заказа еды из ресторанов-партнеров.", "1.3. Мы оставляем за собой право изменять правила в любое время.")) }
-        item { TermsSection(title = "2. Регистрация и аккаунт", icon = Icons.Outlined.Person, content = listOf("2.1. Для оформления заказа необходима регистрация.", "2.2. Вы несете ответственность за сохранность своих учетных данных.")) }
-        item { TermsSection(title = "3. Оформление заказа", icon = Icons.Outlined.ShoppingCart, content = listOf("3.1. Оформляя заказ, вы подтверждаете правильность информации.", "3.2. Цены в приложении могут отличаться от цен в ресторане.")) }
-        item { TermsSection(title = "4. Оплата", icon = Icons.Outlined.Payment, content = listOf("4.1. Доступны способы оплаты: наличные, карты, Apple Pay, Google Pay.", "4.2. Возврат средств осуществляется в течение 3-10 рабочих дней.")) }
-        item { TermsSection(title = "5. Доставка", icon = Icons.Outlined.DeliveryDining, content = listOf("5.1. Доставка осуществляется по указанному адресу.", "5.2. Минимальная сумма заказа зависит от ресторана.")) }
-        item { TermsSection(title = "6. Контактная информация", icon = Icons.Outlined.SupportAgent, content = listOf("Email: support@fastbite.com", "Телефон: +7 (999) 123-45-67")) }
         item {
-            Card(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 16.dp), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                Text(text = "Последнее обновление: 15 марта 2024 г.", modifier = Modifier.fillMaxWidth().padding(16.dp), textAlign = TextAlign.Center, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TermsSection(
+                title = if (isKazakh) "1. Жалпы ережелер" else "1. Общие положения",
+                icon = Icons.Outlined.Info,
+                content = if (isKazakh)
+                    listOf(
+                        "1.1. FastBite қосымшасын пайдалана отырып, сіз осы Ережелермен келісесіз.",
+                        "1.2. FastBite серіктес мейрамханалардан тағамға тапсырыс беру платформасын ұсынады.",
+                        "1.3. Біз ережелерді кез келген уақытта өзгерту құқығын сақтаймыз."
+                    ) else
+                    listOf(
+                        "1.1. Используя приложение FastBite, вы соглашаетесь с настоящими Правилами.",
+                        "1.2. FastBite предоставляет платформу для заказа еды из ресторанов-партнеров.",
+                        "1.3. Мы оставляем за собой право изменять правила в любое время."
+                    )
+            )
+        }
+        item {
+            TermsSection(
+                title = if (isKazakh) "2. Тіркеу және аккаунт" else "2. Регистрация и аккаунт",
+                icon = Icons.Outlined.Person,
+                content = if (isKazakh)
+                    listOf(
+                        "2.1. Тапсырысты рәсімдеу үшін тіркелу қажет.",
+                        "2.2. Сіз өзіңіздің тіркелгі деректеріңіздің сақталуына жауаптысыз."
+                    ) else
+                    listOf(
+                        "2.1. Для оформления заказа необходима регистрация.",
+                        "2.2. Вы несете ответственность за сохранность своих учетных данных."
+                    )
+            )
+        }
+        item {
+            TermsSection(
+                title = if (isKazakh) "3. Тапсырысты рәсімдеу" else "3. Оформление заказа",
+                icon = Icons.Outlined.ShoppingCart,
+                content = if (isKazakh)
+                    listOf(
+                        "3.1. Тапсырысты рәсімдей отырып, сіз ақпараттың дұрыстығын растайсыз.",
+                        "3.2. Қосымшадағы бағалар мейрамханадағы бағалардан өзгеше болуы мүмкін."
+                    ) else
+                    listOf(
+                        "3.1. Оформляя заказ, вы подтверждаете правильность информации.",
+                        "3.2. Цены в приложении могут отличаться от цен в ресторане."
+                    )
+            )
+        }
+        item {
+            TermsSection(
+                title = if (isKazakh) "4. Төлем" else "4. Оплата",
+                icon = Icons.Outlined.Payment,
+                content = if (isKazakh)
+                    listOf(
+                        "4.1. Төлем тәсілдері: қолма-қол ақша, карталар, Apple Pay, Google Pay.",
+                        "4.2. Қаражатты қайтару 3-10 жұмыс күні ішінде жүзеге асырылады."
+                    ) else
+                    listOf(
+                        "4.1. Доступны способы оплаты: наличные, карты, Apple Pay, Google Pay.",
+                        "4.2. Возврат средств осуществляется в течение 3-10 рабочих дней."
+                    )
+            )
+        }
+        item {
+            TermsSection(
+                title = if (isKazakh) "5. Жеткізу" else "5. Доставка",
+                icon = Icons.Outlined.DeliveryDining,
+                content = if (isKazakh)
+                    listOf(
+                        "5.1. Жеткізу көрсетілген мекенжай бойынша жүзеге асырылады.",
+                        "5.2. Тапсырыстың ең төменгі сомасы мейрамханаға байланысты."
+                    ) else
+                    listOf(
+                        "5.1. Доставка осуществляется по указанному адресу.",
+                        "5.2. Минимальная сумма заказа зависит от ресторана."
+                    )
+            )
+        }
+        item {
+            TermsSection(
+                title = if (isKazakh) "6. Байланыс ақпараты" else "6. Контактная информация",
+                icon = Icons.Outlined.SupportAgent,
+                content = listOf("Email: support@fastbite.com", "Телефон: +7 (999) 123-45-67")
+            )
+        }
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Text(
+                    text = if (isKazakh) "Соңғы жаңарту: 15 наурыз 2024 ж." else "Последнее обновление: 15 марта 2024 г.",
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    textAlign = TextAlign.Center,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -1216,41 +1851,101 @@ fun TermsContent() {
 
 @Composable
 fun TermsSection(title: String, icon: ImageVector, content: List<String>) {
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 12.dp)) {
                 Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(text = title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
-            content.forEach { text -> Text(text = text, fontSize = 14.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp)) }
+            content.forEach { text ->
+                Text(
+                    text = text,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
         }
     }
 }
 
 @Composable
 fun AboutContent() {
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Card(modifier = Modifier.size(120.dp), shape = CircleShape, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+    val isKazakh = Strings.getLanguage() == Language.KAZAKH
+
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Card(
+            modifier = Modifier.size(120.dp),
+            shape = CircleShape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = "FB", fontSize = 48.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(
+                    text = "FB",
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "FastBite", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-        Text(text = "Версия 1.0.0 (Build 100)", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+        Text(
+            text = "FastBite",
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = "${Strings.version} 1.0.0 (Build 100)",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp)
+        )
         Spacer(modifier = Modifier.height(24.dp))
-        AboutSection(title = "О нас", icon = Icons.Outlined.Info, content = "FastBite - это сервис доставки еды из лучших ресторанов вашего города.")
-        AboutSection(title = "Наша миссия", icon = Icons.Outlined.EmojiObjects, content = "Делать вкусную еду доступной каждому в любое время.")
-        AboutSection(title = "Контакты", icon = Icons.Outlined.Email, content = "Email: dev@fastbite.com\nСайт: www.fastbite.com")
+        AboutSection(
+            title = Strings.aboutUs,
+            icon = Icons.Outlined.Info,
+            content = Strings.aboutContent
+        )
+        AboutSection(
+            title = Strings.ourMission,
+            icon = Icons.Outlined.EmojiObjects,
+            content = Strings.missionContent
+        )
+        AboutSection(
+            title = Strings.contacts,
+            icon = Icons.Outlined.Email,
+            content = if (isKazakh)
+                "Email: dev@fastbite.com\nСайт: www.fastbite.com" else
+                "Email: dev@fastbite.com\nСайт: www.fastbite.com"
+        )
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "© 2024 FastBite. Все права защищены.", fontSize = 12.sp, color = MaterialTheme.colorScheme.outline)
+        Text(
+            text = Strings.allRightsReserved,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.outline
+        )
     }
 }
 
 @Composable
 fun AboutSection(title: String, icon: ImageVector, content: String) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
                 Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
@@ -1277,6 +1972,7 @@ fun MyReviewsContent(
     var reviewToDelete by remember { mutableStateOf<Review?>(null) }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val isKazakh = Strings.getLanguage() == Language.KAZAKH
 
     LaunchedEffect(userEmail) {
         isLoading = true
@@ -1295,8 +1991,8 @@ fun MyReviewsContent(
     if (showDeleteDialog && reviewToDelete != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false; reviewToDelete = null },
-            title = { Text("Удалить отзыв", fontWeight = FontWeight.Bold) },
-            text = { Text("Вы уверены, что хотите удалить этот отзыв?") },
+            title = { Text(Strings.deleteReviewTitle, fontWeight = FontWeight.Bold) },
+            text = { Text(Strings.deleteReviewConfirm) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -1304,11 +2000,11 @@ fun MyReviewsContent(
                             try {
                                 reviewToDelete?.let { review ->
                                     deleteReviewFromFirebase(review.id)
-                                    Toast.makeText(context, "Отзыв удален", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, Strings.reviewDeleted, Toast.LENGTH_SHORT).show()
                                     refreshReviews()
                                 }
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Ошибка при удалении", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, Strings.errorDeleting, Toast.LENGTH_SHORT).show()
                             } finally {
                                 showDeleteDialog = false
                                 reviewToDelete = null
@@ -1316,10 +2012,10 @@ fun MyReviewsContent(
                         }
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text("Удалить") }
+                ) { Text(Strings.delete) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false; reviewToDelete = null }) { Text("Отмена") }
+                TextButton(onClick = { showDeleteDialog = false; reviewToDelete = null }) { Text(Strings.cancel) }
             },
             shape = RoundedCornerShape(28.dp)
         )
@@ -1329,11 +2025,11 @@ fun MyReviewsContent(
         Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text(
                 text = when {
-                    isLoading -> "Загрузка отзывов..."
-                    reviews.isEmpty() -> "У вас пока нет отзывов"
-                    reviews.size == 1 -> "1 отзыв"
-                    reviews.size in 2..4 -> "${reviews.size} отзыва"
-                    else -> "${reviews.size} отзывов"
+                    isLoading -> Strings.loadingReviews
+                    reviews.isEmpty() -> Strings.noReviews
+                    reviews.size == 1 -> Strings.reviews_one
+                    reviews.size in 2..4 -> "${reviews.size} ${Strings.reviews_few}"
+                    else -> "${reviews.size} ${Strings.reviews_many}"
                 },
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
@@ -1358,13 +2054,13 @@ fun MyReviewsContent(
                         tint = MaterialTheme.colorScheme.outline
                     )
                     Text(
-                        "Нет отзывов",
+                        Strings.noReviews,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        "Ваши отзывы о блюдах будут отображаться здесь",
+                        Strings.yourReviewsWillAppear,
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.outline,
                         textAlign = TextAlign.Center
@@ -1429,7 +2125,7 @@ fun MyReviewCard(
                     IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
                         Icon(
                             Icons.Outlined.Edit,
-                            "Редактировать",
+                            Strings.edit,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)
                         )
@@ -1437,7 +2133,7 @@ fun MyReviewCard(
                     IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                         Icon(
                             Icons.Outlined.Delete,
-                            "Удалить",
+                            Strings.delete,
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(18.dp)
                         )
@@ -1488,6 +2184,7 @@ fun EditReviewContent(
     var rating by remember { mutableStateOf(review.rating.toFloat()) }
     var comment by remember { mutableStateOf(review.comment) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    val isKazakh = Strings.getLanguage() == Language.KAZAKH
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Row(
@@ -1497,10 +2194,10 @@ fun EditReviewContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, "Назад")
+                Icon(Icons.Default.ArrowBack, Strings.back)
             }
             Text(
-                "Редактировать отзыв",
+                Strings.editReview,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(start = 8.dp)
@@ -1526,7 +2223,7 @@ fun EditReviewContent(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Дата: ${review.date}",
+                        text = "${Strings.date}: ${review.date}",
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.padding(top = 4.dp)
@@ -1537,7 +2234,7 @@ fun EditReviewContent(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Ваша оценка",
+                text = Strings.yourRating,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -1556,7 +2253,7 @@ fun EditReviewContent(
                     ) {
                         Icon(
                             if (index < rating) Icons.Filled.Star else Icons.Outlined.Star,
-                            "${index + 1} звезд",
+                            "${index + 1} ${if (isKazakh) "жұлдыз" else "звезд"}",
                             tint = Color(0xFFFFC107),
                             modifier = Modifier.size(40.dp)
                         )
@@ -1566,11 +2263,11 @@ fun EditReviewContent(
 
             Text(
                 text = when (rating.toInt()) {
-                    1 -> "Очень плохо"
-                    2 -> "Плохо"
-                    3 -> "Нормально"
-                    4 -> "Хорошо"
-                    5 -> "Отлично"
+                    1 -> Strings.veryBad
+                    2 -> Strings.bad
+                    3 -> Strings.normal
+                    4 -> Strings.good
+                    5 -> Strings.excellent
                     else -> ""
                 },
                 fontSize = 16.sp,
@@ -1583,7 +2280,7 @@ fun EditReviewContent(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Ваш комментарий",
+                text = Strings.yourComment,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -1593,7 +2290,7 @@ fun EditReviewContent(
             OutlinedTextField(
                 value = comment,
                 onValueChange = { comment = it },
-                placeholder = { Text("Расскажите о ваших впечатлениях...") },
+                placeholder = { Text(Strings.shareImpressions) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(150.dp),
@@ -1611,7 +2308,7 @@ fun EditReviewContent(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Отмена")
+                    Text(Strings.cancel)
                 }
 
                 Button(
@@ -1620,7 +2317,7 @@ fun EditReviewContent(
                     shape = RoundedCornerShape(12.dp),
                     enabled = rating > 0
                 ) {
-                    Text("Сохранить")
+                    Text(Strings.save)
                 }
             }
 
@@ -1636,7 +2333,7 @@ fun EditReviewContent(
             ) {
                 Icon(Icons.Outlined.Delete, null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Удалить отзыв")
+                Text(Strings.deleteReviewTitle)
             }
         }
     }
@@ -1644,8 +2341,8 @@ fun EditReviewContent(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Удалить отзыв", fontWeight = FontWeight.Bold) },
-            text = { Text("Вы уверены, что хотите удалить этот отзыв? Это действие нельзя отменить.") },
+            title = { Text(Strings.deleteReviewTitle, fontWeight = FontWeight.Bold) },
+            text = { Text("${Strings.deleteReviewConfirm} ${Strings.deleteReviewPermanently}") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -1654,12 +2351,12 @@ fun EditReviewContent(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Удалить")
+                    Text(Strings.delete)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Отмена")
+                    Text(Strings.cancel)
                 }
             },
             shape = RoundedCornerShape(28.dp)

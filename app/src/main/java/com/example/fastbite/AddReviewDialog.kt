@@ -15,6 +15,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
+// Строки для диалога добавления отзыва
+object AddReviewStrings {
+    var currentLanguage = Strings.currentLanguage
+
+    val leaveReview: String get() = if (currentLanguage.value == Language.KAZAKH) "Пікір қалдыру" else "Оставить отзыв"
+    val dish: String get() = if (currentLanguage.value == Language.KAZAKH) "Тағам" else "Блюдо"
+    val yourRating: String get() = if (currentLanguage.value == Language.KAZAKH) "Сіздің бағаңыз" else "Ваша оценка"
+    val ratingStar: String get() = if (currentLanguage.value == Language.KAZAKH) "Бағалау" else "Рейтинг"
+    val yourReview: String get() = if (currentLanguage.value == Language.KAZAKH) "Сіздің пікіріңіз" else "Ваш отзыв"
+    val shareImpressions: String get() = if (currentLanguage.value == Language.KAZAKH) "Тағам туралы әсерлеріңізбен бөлісіңіз..." else "Поделитесь впечатлениями о блюде..."
+    val pleaseRate: String get() = if (currentLanguage.value == Language.KAZAKH) "Баға қойыңыз" else "Пожалуйста, поставьте оценку"
+    val sendReview: String get() = if (currentLanguage.value == Language.KAZAKH) "Пікір жіберу" else "Отправить отзыв"
+    val cancel: String get() = if (currentLanguage.value == Language.KAZAKH) "Бас тарту" else "Отмена"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddReviewDialog(
@@ -35,7 +50,7 @@ fun AddReviewDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                "Оставить отзыв",
+                AddReviewStrings.leaveReview,
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp
             )
@@ -48,7 +63,7 @@ fun AddReviewDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    "Блюдо: ${dish.name}",
+                    "${AddReviewStrings.dish}: ${dish.name}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -56,7 +71,7 @@ fun AddReviewDialog(
                 // Рейтинг звездами
                 Column {
                     Text(
-                        "Ваша оценка",
+                        AddReviewStrings.yourRating,
                         fontSize = 14.sp,
                         color = Color.Gray,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -73,7 +88,7 @@ fun AddReviewDialog(
                             ) {
                                 Icon(
                                     if (index < rating) Icons.Default.Star else Icons.Outlined.Star,
-                                    contentDescription = "Рейтинг ${index + 1}",
+                                    contentDescription = "${AddReviewStrings.ratingStar} ${index + 1}",
                                     tint = if (index < rating) Color(0xFFFFC107) else Color.Gray,
                                     modifier = Modifier.size(32.dp)
                                 )
@@ -86,8 +101,8 @@ fun AddReviewDialog(
                 OutlinedTextField(
                     value = comment,
                     onValueChange = { comment = it },
-                    label = { Text("Ваш отзыв") },
-                    placeholder = { Text("Поделитесь впечатлениями о блюде...") },
+                    label = { Text(AddReviewStrings.yourReview) },
+                    placeholder = { Text(AddReviewStrings.shareImpressions) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                     maxLines = 5,
@@ -107,7 +122,7 @@ fun AddReviewDialog(
             Button(
                 onClick = {
                     if (rating == 0) {
-                        error = "Пожалуйста, поставьте оценку"
+                        error = AddReviewStrings.pleaseRate
                         return@Button
                     }
 
@@ -143,7 +158,7 @@ fun AddReviewDialog(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Отправить отзыв")
+                    Text(AddReviewStrings.sendReview)
                 }
             }
         },
@@ -152,7 +167,7 @@ fun AddReviewDialog(
                 onClick = onDismiss,
                 enabled = !isLoading
             ) {
-                Text("Отмена")
+                Text(AddReviewStrings.cancel)
             }
         },
         shape = RoundedCornerShape(28.dp)
