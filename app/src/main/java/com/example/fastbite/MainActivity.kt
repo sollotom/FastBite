@@ -16,16 +16,26 @@ import androidx.navigation.compose.*
 import com.example.fastbite.ui.theme.FastBiteTheme
 import com.google.firebase.FirebaseApp
 
+// Строки для навигации
+object NavigationStrings {
+    var currentLanguage = Strings.currentLanguage
+
+    val menu: String get() = if (currentLanguage.value == Language.KAZAKH) "Мәзір" else "Меню"
+    val cart: String get() = if (currentLanguage.value == Language.KAZAKH) "Себет" else "Корзина"
+    val profile: String get() = if (currentLanguage.value == Language.KAZAKH) "Профиль" else "Профиль"
+    val orders: String get() = if (currentLanguage.value == Language.KAZAKH) "Тапсырыстар" else "Заказы"
+    val unknownRole: String get() = if (currentLanguage.value == Language.KAZAKH) "Белгісіз пайдаланушы рөлі" else "Неизвестная роль пользователя"
+}
+
 sealed class BottomNavItem(
     val title: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val route: String
 ) {
-    object Menu : BottomNavItem("Меню", Icons.Default.Restaurant, "user_menu")
-    object Cart : BottomNavItem("Корзина", Icons.Default.ShoppingCart, "user_cart")
-    object Profile : BottomNavItem("Профиль", Icons.Default.Person, "user_profile")
+    object Menu : BottomNavItem(NavigationStrings.menu, Icons.Default.Restaurant, "user_menu")
+    object Cart : BottomNavItem(NavigationStrings.cart, Icons.Default.ShoppingCart, "user_cart")
+    object Profile : BottomNavItem(NavigationStrings.profile, Icons.Default.Person, "user_profile")
 }
-
 
 // Добавляем SellerBottomNavItem
 sealed class SellerBottomNavItem(
@@ -33,9 +43,9 @@ sealed class SellerBottomNavItem(
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val route: String
 ) {
-    object Menu : SellerBottomNavItem("Меню", Icons.Default.Restaurant, "seller_menu")
-    object Orders : SellerBottomNavItem("Заказы", Icons.Default.ShoppingCart, "seller_orders")
-    object Profile : SellerBottomNavItem("Профиль", Icons.Default.Person, "seller_profile")
+    object Menu : SellerBottomNavItem(NavigationStrings.menu, Icons.Default.Restaurant, "seller_menu")
+    object Orders : SellerBottomNavItem(NavigationStrings.orders, Icons.Default.ShoppingCart, "seller_orders")
+    object Profile : SellerBottomNavItem(NavigationStrings.profile, Icons.Default.Person, "seller_profile")
 }
 
 class MainActivity : ComponentActivity() {
@@ -47,6 +57,13 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             FastBiteTheme {
+                // Подписываемся на изменение языка
+                val currentLanguage by remember { mutableStateOf(Strings.getLanguage()) }
+
+                // Обновляем заголовки при смене языка
+                LaunchedEffect(currentLanguage) {
+                    // Принудительно обновляем UI
+                }
 
                 var loggedInEmail by remember {
                     mutableStateOf(sharedPrefs.getString("user_email", null))
@@ -100,7 +117,6 @@ fun UserApp(
 ) {
     val navController = rememberNavController()
 
-    // 💥 БЕЗ route
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination?.route ?: ""
 
@@ -297,6 +313,6 @@ fun ErrorScreen() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text("Неизвестная роль пользователя")
+        Text(NavigationStrings.unknownRole)
     }
 }

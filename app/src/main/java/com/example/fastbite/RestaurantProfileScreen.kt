@@ -1,8 +1,6 @@
 package com.example.fastbite
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +28,38 @@ import androidx.compose.foundation.horizontalScroll
 import coil.compose.AsyncImage
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+
+// Строки для экрана
+object RestaurantStrings {
+    val addToCart: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Себетке қосу" else "Добавить в корзину"
+    val inCart: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Себетте" else "В корзине"
+    val pcs: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "дана" else "шт."
+    val sum: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Сомасы" else "Сумма"
+    val decrease: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Азайту" else "Уменьшить"
+    val increase: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Көбейту" else "Увеличить"
+    val unknownRestaurant: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Белгісіз мейрамхана" else "Неизвестный ресторан"
+    val restaurantProfile: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Мейрамхана профилі" else "Профиль ресторана"
+    val back: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Артқа" else "Назад"
+    val restaurantNotFound: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Мейрамхана табылмады" else "Ресторан не найден"
+    val menu: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Мәзір" else "Меню"
+    val all: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Барлығы" else "Все"
+    val noDishes: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Қолжетімді тағамдар жоқ" else "Нет доступных блюд"
+    val price: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Бағасы" else "Цена"
+    val oldPrice: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Ескі баға" else "Старая цена"
+    val description: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Сипаттама" else "Описание"
+    val category: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Санат" else "Категория"
+    val weightOrVolume: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Салмағы / Көлемі" else "Вес / Объем"
+    val ingredients: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Құрамы" else "Ингредиенты"
+    val calories: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Калория" else "Калории"
+    val proteins: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Ақуыздар" else "Белки"
+    val fats: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Майлар" else "Жиры"
+    val carbs: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Көмірсулар" else "Углеводы"
+    val cookingTime: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Дайындау уақыты" else "Время приготовления"
+    val spiciness: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Ащылығы" else "Острота"
+    val vegetarian: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Вегетариандық" else "Вегетарианское"
+    val yes: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Иә" else "Да"
+    val no: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жоқ" else "Нет"
+}
 
 // Компактные контролы корзины
 @Composable
@@ -68,7 +98,7 @@ fun CartControlsCompact(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "Добавить в корзину",
+                    RestaurantStrings.addToCart,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -80,7 +110,7 @@ fun CartControlsCompact(
                     .padding(16.dp)
             ) {
                 Text(
-                    "В корзине",
+                    RestaurantStrings.inCart,
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
@@ -107,7 +137,7 @@ fun CartControlsCompact(
                         ) {
                             Icon(
                                 Icons.Default.Remove,
-                                contentDescription = "Уменьшить",
+                                contentDescription = RestaurantStrings.decrease,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -120,7 +150,7 @@ fun CartControlsCompact(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "шт.",
+                                RestaurantStrings.pcs,
                                 fontSize = 11.sp,
                                 color = Color.Gray
                             )
@@ -137,7 +167,7 @@ fun CartControlsCompact(
                         ) {
                             Icon(
                                 Icons.Default.Add,
-                                contentDescription = "Увеличить",
+                                contentDescription = RestaurantStrings.increase,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -146,7 +176,7 @@ fun CartControlsCompact(
 
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            "Сумма",
+                            RestaurantStrings.sum,
                             fontSize = 11.sp,
                             color = Color.Gray
                         )
@@ -203,7 +233,7 @@ fun CartButtonCompact(dish: Dish, modifier: Modifier = Modifier) {
 
             Icon(
                 if (quantity > 0) Icons.Default.ShoppingCart else Icons.Default.AddShoppingCart,
-                contentDescription = "Добавить в корзину",
+                contentDescription = RestaurantStrings.addToCart,
                 tint = Color.White,
                 modifier = Modifier.size(18.dp)
             )
@@ -222,7 +252,7 @@ fun RestaurantProfileScreen(
     var restaurant by remember { mutableStateOf<Restaurant?>(null) }
     var dishes by remember { mutableStateOf<List<Dish>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
-    var selectedCategory by remember { mutableStateOf("Все") }
+    var selectedCategory by remember { mutableStateOf(RestaurantStrings.all) }
     var selectedDish by remember { mutableStateOf<Dish?>(null) }
 
     // Загружаем данные ресторана
@@ -231,7 +261,7 @@ fun RestaurantProfileScreen(
             .addOnSuccessListener { doc ->
                 restaurant = Restaurant(
                     id = doc.id,
-                    name = doc.getString("name") ?: "Неизвестный ресторан",
+                    name = doc.getString("name") ?: RestaurantStrings.unknownRestaurant,
                     description = doc.getString("description") ?: "",
                     iconUrl = doc.getString("iconUrl") ?: "",
                     coverUrl = doc.getString("coverUrl") ?: "",
@@ -282,12 +312,12 @@ fun RestaurantProfileScreen(
     }
 
     // Категории из блюд
-    val categories = listOf("Все") +
+    val categories = listOf(RestaurantStrings.all) +
             dishes.map { it.category }
                 .filter { it.isNotBlank() }
                 .distinct()
 
-    val filteredDishes = if (selectedCategory == "Все") dishes
+    val filteredDishes = if (selectedCategory == RestaurantStrings.all) dishes
     else dishes.filter { it.category == selectedCategory }
 
     // Обработка кнопки "Назад" на устройстве
@@ -304,12 +334,12 @@ fun RestaurantProfileScreen(
                     if (restaurant != null) {
                         Text(restaurant!!.name, maxLines = 1)
                     } else {
-                        Text("Профиль ресторана")
+                        Text(RestaurantStrings.restaurantProfile)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.Default.ArrowBack, contentDescription = RestaurantStrings.back)
                     }
                 }
             )
@@ -327,7 +357,7 @@ fun RestaurantProfileScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Ресторан не найден")
+                Text(RestaurantStrings.restaurantNotFound)
             }
         } else {
             // ВЕСЬ КОНТЕНТ ПРОКРУЧИВАЕТСЯ ВНИЗ
@@ -428,7 +458,7 @@ fun RestaurantProfileScreen(
 
                 // Категории
                 Text(
-                    "Меню",
+                    RestaurantStrings.menu,
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -469,7 +499,7 @@ fun RestaurantProfileScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            "Нет доступных блюд",
+                            RestaurantStrings.noDishes,
                             fontSize = 18.sp,
                             color = Color.Gray
                         )
@@ -525,7 +555,7 @@ fun RestaurantProfileScreen(
                 ) {
                     Icon(
                         Icons.Default.ArrowBack,
-                        contentDescription = "Назад",
+                        contentDescription = RestaurantStrings.back,
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -567,13 +597,13 @@ fun RestaurantProfileScreen(
                 if (discountPercentage > 0) {
                     Column {
                         Text(
-                            "Цена: ${"%.0f".format(discountedPrice)} ₸",
+                            "${RestaurantStrings.price}: ${"%.0f".format(discountedPrice)} ₸",
                             color = Color.Red,
                             fontWeight = FontWeight.Bold,
                             fontSize = 24.sp
                         )
                         Text(
-                            "Старая цена: ${"%.0f".format(originalPrice)} ₸",
+                            "${RestaurantStrings.oldPrice}: ${"%.0f".format(originalPrice)} ₸",
                             color = Color.Gray,
                             fontSize = 16.sp,
                             style = TextStyle(textDecoration = TextDecoration.LineThrough)
@@ -581,7 +611,7 @@ fun RestaurantProfileScreen(
                     }
                 } else {
                     Text(
-                        "Цена: ${"%.0f".format(originalPrice)} ₸",
+                        "${RestaurantStrings.price}: ${"%.0f".format(originalPrice)} ₸",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -592,7 +622,7 @@ fun RestaurantProfileScreen(
                 if (dish.description.isNotBlank()) {
                     Column {
                         Text(
-                            "Описание",
+                            RestaurantStrings.description,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
                         )
@@ -603,34 +633,34 @@ fun RestaurantProfileScreen(
                 }
 
                 if (dish.category.isNotBlank()) {
-                    Text("Категория: ${dish.category}", fontSize = 16.sp)
+                    Text("${RestaurantStrings.category}: ${dish.category}", fontSize = 16.sp)
                 }
 
                 if (dish.weightOrVolume.isNotBlank()) {
-                    Text("Вес / Объем: ${dish.weightOrVolume}", fontSize = 16.sp)
+                    Text("${RestaurantStrings.weightOrVolume}: ${dish.weightOrVolume}", fontSize = 16.sp)
                 }
 
                 if (dish.ingredients.isNotBlank()) {
-                    Text("Ингредиенты: ${dish.ingredients}", fontSize = 16.sp)
+                    Text("${RestaurantStrings.ingredients}: ${dish.ingredients}", fontSize = 16.sp)
                 }
 
                 if (dish.calories.isNotBlank()) {
-                    Text("Калории: ${dish.calories}", fontSize = 16.sp)
+                    Text("${RestaurantStrings.calories}: ${dish.calories}", fontSize = 16.sp)
                 }
 
                 if (dish.proteins.isNotBlank() || dish.fats.isNotBlank() || dish.carbs.isNotBlank()) {
-                    Text("Белки: ${dish.proteins}, Жиры: ${dish.fats}, Углеводы: ${dish.carbs}", fontSize = 16.sp)
+                    Text("${RestaurantStrings.proteins}: ${dish.proteins}, ${RestaurantStrings.fats}: ${dish.fats}, ${RestaurantStrings.carbs}: ${dish.carbs}", fontSize = 16.sp)
                 }
 
                 if (dish.cookingTime.isNotBlank()) {
-                    Text("Время приготовления: ${dish.cookingTime}", fontSize = 16.sp)
+                    Text("${RestaurantStrings.cookingTime}: ${dish.cookingTime}", fontSize = 16.sp)
                 }
 
                 if (dish.spiciness.isNotBlank()) {
-                    Text("Острота: ${dish.spiciness}", fontSize = 16.sp)
+                    Text("${RestaurantStrings.spiciness}: ${dish.spiciness}", fontSize = 16.sp)
                 }
 
-                Text("Вегетарианское: ${if (dish.vegetarian) "Да" else "Нет"}", fontSize = 16.sp)
+                Text("${RestaurantStrings.vegetarian}: ${if (dish.vegetarian) RestaurantStrings.yes else RestaurantStrings.no}", fontSize = 16.sp)
 
                 // Рейтинг блюда
                 val avgRating = dish.ratingAverage ?: 0.0

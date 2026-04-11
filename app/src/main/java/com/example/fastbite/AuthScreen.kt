@@ -22,6 +22,39 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
+// Строки для экрана авторизации
+object AuthStrings {
+    var currentLanguage = Strings.currentLanguage
+
+    val createAccount: String get() = if (currentLanguage.value == Language.KAZAKH) "Аккаунт құру" else "Создать аккаунт"
+    val welcome: String get() = if (currentLanguage.value == Language.KAZAKH) "Қош келдіңіз!" else "Добро пожаловать!"
+    val registerToOrder: String get() = if (currentLanguage.value == Language.KAZAKH) "Тапсырыс беруді бастау үшін тіркеліңіз" else "Зарегистрируйтесь, чтобы начать заказывать"
+    val loginToAccount: String get() = if (currentLanguage.value == Language.KAZAKH) "Аккаунтыңызға кіріңіз" else "Войдите в свой аккаунт"
+    val email: String get() = if (currentLanguage.value == Language.KAZAKH) "Email" else "Email"
+    val emailPlaceholder: String get() = if (currentLanguage.value == Language.KAZAKH) "example@mail.com" else "example@mail.com"
+    val password: String get() = if (currentLanguage.value == Language.KAZAKH) "Құпия сөз" else "Пароль"
+    val passwordPlaceholder: String get() = if (currentLanguage.value == Language.KAZAKH) "Кемінде 6 таңба" else "Минимум 6 символов"
+    val restaurantName: String get() = if (currentLanguage.value == Language.KAZAKH) "Мейрамхана атауы" else "Название ресторана"
+    val yourName: String get() = if (currentLanguage.value == Language.KAZAKH) "Сіздің атыңыз" else "Ваше имя"
+    val enterRestaurantName: String get() = if (currentLanguage.value == Language.KAZAKH) "Мейрамхана атауын енгізіңіз" else "Введите название ресторана"
+    val enterYourName: String get() = if (currentLanguage.value == Language.KAZAKH) "Атыңызды енгізіңіз" else "Введите ваше имя"
+    val registerAsRestaurant: String get() = if (currentLanguage.value == Language.KAZAKH) "Мейрамхана ретінде тіркелу" else "Зарегистрироваться как ресторан"
+    val register: String get() = if (currentLanguage.value == Language.KAZAKH) "Тіркелу" else "Зарегистрироваться"
+    val login: String get() = if (currentLanguage.value == Language.KAZAKH) "Кіру" else "Войти"
+    val haveAccount: String get() = if (currentLanguage.value == Language.KAZAKH) "Аккаунтыңыз бар ма? Кіру" else "Уже есть аккаунт? Войти"
+    val noAccount: String get() = if (currentLanguage.value == Language.KAZAKH) "Аккаунтыңыз жоқ па? Тіркелу" else "Нет аккаунта? Регистрация"
+
+    // Ошибки
+    val fillAllFields: String get() = if (currentLanguage.value == Language.KAZAKH) "Барлық өрістерді толтырыңыз" else "Заполните все поля"
+    val passwordMinLength: String get() = if (currentLanguage.value == Language.KAZAKH) "Құпия сөз кемінде 6 таңбадан тұруы керек" else "Пароль должен быть не менее 6 символов"
+    val emailInUse: String get() = if (currentLanguage.value == Language.KAZAKH) "Email бос емес" else "Email уже используется"
+    val registrationError: String get() = if (currentLanguage.value == Language.KAZAKH) "Тіркеу қатесі: " else "Ошибка регистрации: "
+    val restaurantCreationError: String get() = if (currentLanguage.value == Language.KAZAKH) "Мейрамхана құру қатесі: " else "Ошибка создания ресторана: "
+    val dataSaveError: String get() = if (currentLanguage.value == Language.KAZAKH) "Деректерді сақтау қатесі: " else "Ошибка сохранения данных: "
+    val dataFetchError: String get() = if (currentLanguage.value == Language.KAZAKH) "Деректерді алу қатесі: " else "Ошибка получения данных: "
+    val invalidCredentials: String get() = if (currentLanguage.value == Language.KAZAKH) "Email немесе құпия сөз дұрыс емес" else "Неверный email или пароль"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
@@ -82,7 +115,7 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = if (isRegistering) "Создать аккаунт" else "Добро пожаловать!",
+                text = if (isRegistering) AuthStrings.createAccount else AuthStrings.welcome,
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 28.sp
@@ -91,7 +124,7 @@ fun AuthScreen(
             )
 
             Text(
-                text = if (isRegistering) "Зарегистрируйтесь, чтобы начать заказывать" else "Войдите в свой аккаунт",
+                text = if (isRegistering) AuthStrings.registerToOrder else AuthStrings.loginToAccount,
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
@@ -114,8 +147,8 @@ fun AuthScreen(
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = { Text("Email") },
-                        placeholder = { Text("example@mail.com") },
+                        label = { Text(AuthStrings.email) },
+                        placeholder = { Text(AuthStrings.emailPlaceholder) },
                         leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -125,8 +158,8 @@ fun AuthScreen(
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
-                        label = { Text("Пароль") },
-                        placeholder = { Text("Минимум 6 символов") },
+                        label = { Text(AuthStrings.password) },
+                        placeholder = { Text(AuthStrings.passwordPlaceholder) },
                         leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                         singleLine = true,
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -146,8 +179,8 @@ fun AuthScreen(
                         OutlinedTextField(
                             value = userName,
                             onValueChange = { userName = it },
-                            label = { Text(if (isSeller) "Название ресторана" else "Ваше имя") },
-                            placeholder = { Text(if (isSeller) "Введите название ресторана" else "Введите ваше имя") },
+                            label = { Text(if (isSeller) AuthStrings.restaurantName else AuthStrings.yourName) },
+                            placeholder = { Text(if (isSeller) AuthStrings.enterRestaurantName else AuthStrings.enterYourName) },
                             leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
@@ -166,7 +199,7 @@ fun AuthScreen(
                                 )
                             )
                             Text(
-                                "Зарегистрироваться как ресторан",
+                                AuthStrings.registerAsRestaurant,
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -176,11 +209,11 @@ fun AuthScreen(
                     Button(
                         onClick = {
                             if (email.isBlank() || password.isBlank() || (isRegistering && userName.isBlank())) {
-                                error = "Заполните все поля"
+                                error = AuthStrings.fillAllFields
                                 return@Button
                             }
                             if (isRegistering && password.length < 6) {
-                                error = "Пароль должен быть не менее 6 символов"
+                                error = AuthStrings.passwordMinLength
                                 return@Button
                             }
 
@@ -221,7 +254,7 @@ fun AuthScreen(
                                                         }
                                                         .addOnFailureListener { e ->
                                                             isLoading = false
-                                                            error = "Ошибка создания ресторана: ${e.message}"
+                                                            error = AuthStrings.restaurantCreationError + e.message
                                                         }
                                                 } else {
                                                     isLoading = false
@@ -230,14 +263,14 @@ fun AuthScreen(
                                             }
                                             .addOnFailureListener { e ->
                                                 isLoading = false
-                                                error = "Ошибка сохранения данных: ${e.message}"
+                                                error = AuthStrings.dataSaveError + e.message
                                             }
                                     }
                                     .addOnFailureListener { e ->
                                         isLoading = false
                                         error = when {
-                                            e.message?.contains("email address is already in use") == true -> "Email уже используется"
-                                            else -> "Ошибка регистрации: ${e.message}"
+                                            e.message?.contains("email address is already in use") == true -> AuthStrings.emailInUse
+                                            else -> AuthStrings.registrationError + e.message
                                         }
                                     }
                             } else {
@@ -255,12 +288,12 @@ fun AuthScreen(
                                             }
                                             .addOnFailureListener { e ->
                                                 isLoading = false
-                                                error = "Ошибка получения данных: ${e.message}"
+                                                error = AuthStrings.dataFetchError + e.message
                                             }
                                     }
                                     .addOnFailureListener {
                                         isLoading = false
-                                        error = "Неверный email или пароль"
+                                        error = AuthStrings.invalidCredentials
                                     }
                             }
                         },
@@ -277,7 +310,11 @@ fun AuthScreen(
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text(if (isRegistering) "Зарегистрироваться" else "Войти", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                            Text(
+                                if (isRegistering) AuthStrings.register else AuthStrings.login,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                     }
                 }
@@ -295,7 +332,7 @@ fun AuthScreen(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
                 Text(
-                    text = if (isRegistering) "Уже есть аккаунт? Войти" else "Нет аккаунта? Регистрация",
+                    text = if (isRegistering) AuthStrings.haveAccount else AuthStrings.noAccount,
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.primary
                 )

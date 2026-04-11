@@ -39,6 +39,52 @@ import coil.compose.AsyncImage
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
+// Строки для SellerMenuScreen
+object SellerMenuStrings {
+    val myMenu: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Сіздің мәзіріңіз" else "Ваше меню"
+    val searchDish: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тағамды іздеу" else "Поиск блюда"
+    val addDish: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тағам қосу" else "Добавить блюдо"
+    val edit: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Өңдеу" else "Редактировать"
+    val delete: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жою" else "Удалить"
+    val deleteDish: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тағамды жою?" else "Удалить блюдо?"
+    fun deleteConfirm(dishName: String): String = if (Strings.currentLanguage.value == Language.KAZAKH)
+        "Сіз шынымен \"$dishName\" жойғыңыз келе ме?" else
+        "Вы уверены, что хотите удалить \"$dishName\"?"
+    val cancel: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Бас тарту" else "Отмена"
+    val back: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Артқа" else "Назад"
+    val myRestaurant: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Менің мейрамханам" else "Мой ресторан"
+    val goToProfile: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Профильге өту" else "Перейти в профиль"
+    val reviews: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Пікірлер" else "Отзывы"
+    val noReviews: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Әзірге пікірлер жоқ" else "Пока отзывов нет"
+    val price: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Бағасы" else "Цена"
+    val oldPrice: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Ескі баға" else "Старая цена"
+    val description: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Сипаттама" else "Описание"
+    val category: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Санат" else "Категория"
+    val weightOrVolume: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Салмағы / Көлемі" else "Вес / Объем"
+    val ingredients: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Құрамы" else "Ингредиенты"
+    val calories: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Калория" else "Калории"
+    val proteins: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Ақуыздар" else "Белки"
+    val fats: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Майлар" else "Жиры"
+    val carbs: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Көмірсулар" else "Углеводы"
+    val cookingTime: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Дайындау уақыты" else "Время приготовления"
+    val spiciness: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Ащылығы" else "Острота"
+    val vegetarian: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Вегетариандық" else "Вегетарианское"
+    val available: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Қолжетімді" else "Доступно"
+    val yes: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Иә" else "Да"
+    val no: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жоқ" else "Нет"
+    val save: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Сақтау" else "Сохранить"
+    val editDish: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Тағамды өңдеу" else "Редактировать блюдо"
+    val name: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Атауы" else "Название"
+    val photoUrl: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Фото URL" else "Фото URL"
+    val allergens: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Аллергендер" else "Аллергены"
+    val addOns: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Қоспалар" else "Добавки"
+    val addOnsPrice: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Қоспалар бағасы" else "Цена добавок"
+    val portions: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Порциялар" else "Порции"
+    val costPrice: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Өзіндік құны" else "Себестоимость"
+    val discount: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Жеңілдік" else "Скидка"
+    val popularDish: String get() = if (Strings.currentLanguage.value == Language.KAZAKH) "Танымал тағам" else "Популярное блюдо"
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SellerMenuScreen(
@@ -49,7 +95,6 @@ fun SellerMenuScreen(
 ) {
     val db = Firebase.firestore
 
-    // ОБЪЯВИТЬ ВСЕ ПЕРЕД BackHandler
     var dishes by remember { mutableStateOf(listOf<Dish>()) }
     var dishToEdit by remember { mutableStateOf<Dish?>(null) }
     var dishToDelete by remember { mutableStateOf<Dish?>(null) }
@@ -57,11 +102,9 @@ fun SellerMenuScreen(
     var searchQuery by remember { mutableStateOf("") }
     var showAddDishScreen by remember { mutableStateOf(false) }
 
-    // ✅ Данные ресторана для отображения в заголовке
-    var restaurantName by remember { mutableStateOf("Мой ресторан") }
+    var restaurantName by remember { mutableStateOf(SellerMenuStrings.myRestaurant) }
     var restaurantIcon by remember { mutableStateOf("") }
 
-    // Теперь можно использовать в BackHandler
     androidx.activity.compose.BackHandler(
         enabled = selectedDish != null || dishToEdit != null || dishToDelete != null
     ) {
@@ -73,7 +116,6 @@ fun SellerMenuScreen(
         }
     }
 
-    // Загрузка блюд с отзывами
     LaunchedEffect(currentUserEmail) {
         db.collection("dishes")
             .whereEqualTo("owner", currentUserEmail)
@@ -112,15 +154,13 @@ fun SellerMenuScreen(
                 }
             }
 
-        // ✅ Загрузка данных ресторана
         db.collection("restaurants").document(currentUserEmail).get()
             .addOnSuccessListener { doc ->
-                restaurantName = doc.getString("name") ?: "Мой ресторан"
+                restaurantName = doc.getString("name") ?: SellerMenuStrings.myRestaurant
                 restaurantIcon = doc.getString("iconUrl") ?: ""
             }
     }
 
-    // ✅ Рассчитываем рейтинг ресторана как в профиле
     val restaurantRating: Double
     val restaurantRatingCount: Long
 
@@ -138,7 +178,6 @@ fun SellerMenuScreen(
 
     val filteredDishes = dishes.filter { it.name.contains(searchQuery, ignoreCase = true) }
 
-    // 🔹 Экран добавления блюда
     if (showAddDishScreen) {
         AddDishScreen(
             currentUserEmail = currentUserEmail,
@@ -152,7 +191,7 @@ fun SellerMenuScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Ваше меню",
+                        SellerMenuStrings.myMenu,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -172,7 +211,7 @@ fun SellerMenuScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                label = { Text("Поиск блюда") },
+                label = { Text(SellerMenuStrings.searchDish) },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -183,7 +222,7 @@ fun SellerMenuScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Добавить блюдо", fontSize = 16.sp)
+                Text(SellerMenuStrings.addDish, fontSize = 16.sp)
             }
 
             Spacer(Modifier.height(16.dp))
@@ -261,7 +300,6 @@ fun SellerMenuScreen(
                                 )
                             }
 
-                            // ✅ РЕЙТИНГ БЛЮДА (не ресторана)
                             val avgRating = dish.ratingAverage ?: 0.0
                             Row(
                                 verticalAlignment = Alignment.CenterVertically
@@ -295,7 +333,6 @@ fun SellerMenuScreen(
                                 }
 
                                 Spacer(Modifier.width(4.dp))
-                                // ✅ Показываем рейтинг блюда
                                 Text(
                                     "%.1f".format(avgRating),
                                     fontSize = 12.sp,
@@ -317,7 +354,7 @@ fun SellerMenuScreen(
                                 ) {
                                     Icon(
                                         Icons.Default.Edit,
-                                        contentDescription = "Редактировать",
+                                        contentDescription = SellerMenuStrings.edit,
                                         tint = Color(0xFF2196F3),
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -331,7 +368,7 @@ fun SellerMenuScreen(
                                 ) {
                                     Icon(
                                         Icons.Default.Delete,
-                                        contentDescription = "Удалить",
+                                        contentDescription = SellerMenuStrings.delete,
                                         tint = Color(0xFFF44336),
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -344,7 +381,6 @@ fun SellerMenuScreen(
         }
     }
 
-    // Диалог редактирования
     dishToEdit?.let { dish ->
         EditDishDialog(
             dish = dish,
@@ -357,12 +393,11 @@ fun SellerMenuScreen(
         )
     }
 
-    // Диалог удаления
     dishToDelete?.let { dish ->
         AlertDialog(
             onDismissRequest = { dishToDelete = null },
-            title = { Text("Удалить блюдо?") },
-            text = { Text("Вы уверены, что хотите удалить \"${dish.name}\"?") },
+            title = { Text(SellerMenuStrings.deleteDish) },
+            text = { Text(SellerMenuStrings.deleteConfirm(dish.name)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -371,18 +406,17 @@ fun SellerMenuScreen(
                         dishToDelete = null
                     }
                 ) {
-                    Text("Удалить", color = Color.Red)
+                    Text(SellerMenuStrings.delete, color = Color.Red)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { dishToDelete = null }) {
-                    Text("Отмена")
+                    Text(SellerMenuStrings.cancel)
                 }
             }
         )
     }
 
-    // 🔹 Детали блюда с заголовком профиля перед отзывами
     selectedDish?.let { dish ->
         Box(
             Modifier
@@ -411,7 +445,7 @@ fun SellerMenuScreen(
                 ) {
                     Icon(
                         Icons.Default.ArrowBack,
-                        contentDescription = "Назад",
+                        contentDescription = SellerMenuStrings.back,
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -451,13 +485,13 @@ fun SellerMenuScreen(
                 if (discountPercentage > 0) {
                     Column {
                         Text(
-                            "Цена: ${"%.0f".format(discountedPrice)} тг",
+                            "${SellerMenuStrings.price}: ${"%.0f".format(discountedPrice)} тг",
                             color = Color.Red,
                             fontWeight = FontWeight.Bold,
                             fontSize = 24.sp
                         )
                         Text(
-                            "Старая цена: ${"%.0f".format(originalPrice)} тг",
+                            "${SellerMenuStrings.oldPrice}: ${"%.0f".format(originalPrice)} тг",
                             color = Color.Gray,
                             fontSize = 16.sp,
                             style = TextStyle(textDecoration = TextDecoration.LineThrough)
@@ -465,7 +499,7 @@ fun SellerMenuScreen(
                     }
                 } else {
                     Text(
-                        "Цена: ${"%.0f".format(originalPrice)} тг",
+                        "${SellerMenuStrings.price}: ${"%.0f".format(originalPrice)} тг",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -476,7 +510,7 @@ fun SellerMenuScreen(
                 if (dish.description.isNotBlank()) {
                     Column {
                         Text(
-                            "Описание",
+                            SellerMenuStrings.description,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
                         )
@@ -486,17 +520,16 @@ fun SellerMenuScreen(
                     }
                 }
 
-                Text("Категория: ${dish.category}")
-                Text("Вес / Объем: ${dish.weightOrVolume}")
-                Text("Ингредиенты: ${dish.ingredients}")
-                Text("Калории: ${dish.calories}")
-                Text("Белки: ${dish.proteins}, Жиры: ${dish.fats}, Углеводы: ${dish.carbs}")
-                Text("Время приготовления: ${dish.cookingTime}")
-                Text("Острота: ${dish.spiciness}")
-                Text("Вегетарианское: ${if (dish.vegetarian) "Да" else "Нет"}")
-                Text("Доступно: ${if (dish.availability) "Да" else "Нет"}")
+                Text("${SellerMenuStrings.category}: ${dish.category}")
+                Text("${SellerMenuStrings.weightOrVolume}: ${dish.weightOrVolume}")
+                Text("${SellerMenuStrings.ingredients}: ${dish.ingredients}")
+                Text("${SellerMenuStrings.calories}: ${dish.calories}")
+                Text("${SellerMenuStrings.proteins}: ${dish.proteins}, ${SellerMenuStrings.fats}: ${dish.fats}, ${SellerMenuStrings.carbs}: ${dish.carbs}")
+                Text("${SellerMenuStrings.cookingTime}: ${dish.cookingTime}")
+                Text("${SellerMenuStrings.spiciness}: ${dish.spiciness}")
+                Text("${SellerMenuStrings.vegetarian}: ${if (dish.vegetarian) SellerMenuStrings.yes else SellerMenuStrings.no}")
+                Text("${SellerMenuStrings.available}: ${if (dish.availability) SellerMenuStrings.yes else SellerMenuStrings.no}")
 
-                // Рейтинг блюда
                 val avgRating = dish.ratingAverage ?: 0.0
                 val totalRatings = dish.ratingCount ?: 0L
 
@@ -519,7 +552,6 @@ fun SellerMenuScreen(
                 }
                 Spacer(Modifier.height(16.dp))
 
-                // ✅ ЗАГОЛОВОК ПРОФИЛЯ РЕСТОРАНА ПЕРЕД ОТЗЫВАМИ
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -570,7 +602,6 @@ fun SellerMenuScreen(
 
                             Spacer(Modifier.height(4.dp))
 
-                            // ✅ РЕЙТИНГ РЕСТОРАНА КАК В ПРОФИЛЕ
                             Row(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -603,7 +634,6 @@ fun SellerMenuScreen(
                                 }
 
                                 Spacer(Modifier.width(4.dp))
-                                // ✅ Форматирование как в профиле: "рейтинг (количество)"
                                 Text(
                                     "%.1f (%d)".format(restaurantRating, restaurantRatingCount),
                                     fontSize = 12.sp,
@@ -614,7 +644,7 @@ fun SellerMenuScreen(
 
                         Icon(
                             Icons.Default.ArrowBack,
-                            contentDescription = "Перейти в профиль",
+                            contentDescription = SellerMenuStrings.goToProfile,
                             modifier = Modifier
                                 .size(24.dp)
                                 .graphicsLayer { rotationZ = 180f },
@@ -625,11 +655,11 @@ fun SellerMenuScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                Text("Отзывы", style = MaterialTheme.typography.titleMedium)
+                Text(SellerMenuStrings.reviews, style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
 
                 if (dish.reviews.isNullOrEmpty()) {
-                    Text("Пока отзывов нет")
+                    Text(SellerMenuStrings.noReviews)
                 } else {
                     dish.reviews.forEach { review ->
                         Card(
@@ -699,7 +729,7 @@ fun EditDishDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Редактировать блюдо") },
+        title = { Text(SellerMenuStrings.editDish) },
         text = {
             Column(
                 modifier = Modifier
@@ -708,41 +738,41 @@ fun EditDishDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedTextField(name, { name = it }, label = { Text("Название") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(price, { price = it }, label = { Text("Цена") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(description, { description = it }, label = { Text("Описание") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(photoUrl, { photoUrl = it }, label = { Text("Фото URL") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(category, { category = it }, label = { Text("Категория") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(weightOrVolume, { weightOrVolume = it }, label = { Text("Вес / объём") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(ingredients, { ingredients = it }, label = { Text("Ингредиенты") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(calories, { calories = it }, label = { Text("Калории") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(proteins, { proteins = it }, label = { Text("Белки") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(fats, { fats = it }, label = { Text("Жиры") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(carbs, { carbs = it }, label = { Text("Углеводы") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(cookingTime, { cookingTime = it }, label = { Text("Время приготовления") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(spiciness, { spiciness = it }, label = { Text("Острота") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(name, { name = it }, label = { Text(SellerMenuStrings.name) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(price, { price = it }, label = { Text(SellerMenuStrings.price) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(description, { description = it }, label = { Text(SellerMenuStrings.description) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(photoUrl, { photoUrl = it }, label = { Text(SellerMenuStrings.photoUrl) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(category, { category = it }, label = { Text(SellerMenuStrings.category) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(weightOrVolume, { weightOrVolume = it }, label = { Text(SellerMenuStrings.weightOrVolume) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(ingredients, { ingredients = it }, label = { Text(SellerMenuStrings.ingredients) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(calories, { calories = it }, label = { Text(SellerMenuStrings.calories) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(proteins, { proteins = it }, label = { Text(SellerMenuStrings.proteins) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(fats, { fats = it }, label = { Text(SellerMenuStrings.fats) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(carbs, { carbs = it }, label = { Text(SellerMenuStrings.carbs) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(cookingTime, { cookingTime = it }, label = { Text(SellerMenuStrings.cookingTime) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(spiciness, { spiciness = it }, label = { Text(SellerMenuStrings.spiciness) }, modifier = Modifier.fillMaxWidth())
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(vegetarian, { vegetarian = it })
-                    Text("Вегетарианское")
+                    Text(SellerMenuStrings.vegetarian)
                 }
 
-                OutlinedTextField(allergens, { allergens = it }, label = { Text("Аллергены") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(addOns, { addOns = it }, label = { Text("Добавки") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(addOnsPrice, { addOnsPrice = it }, label = { Text("Цена добавок") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(allergens, { allergens = it }, label = { Text(SellerMenuStrings.allergens) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(addOns, { addOns = it }, label = { Text(SellerMenuStrings.addOns) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(addOnsPrice, { addOnsPrice = it }, label = { Text(SellerMenuStrings.addOnsPrice) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(availability, { availability = it })
-                    Text("Доступно")
+                    Text(SellerMenuStrings.available)
                 }
 
-                OutlinedTextField(portions, { portions = it }, label = { Text("Порции") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(costPrice, { costPrice = it }, label = { Text("Себестоимость") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(discount, { discount = it }, label = { Text("Скидка") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(portions, { portions = it }, label = { Text(SellerMenuStrings.portions) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(costPrice, { costPrice = it }, label = { Text(SellerMenuStrings.costPrice) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(discount, { discount = it }, label = { Text(SellerMenuStrings.discount) }, modifier = Modifier.fillMaxWidth())
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(popular, { popular = it })
-                    Text("Популярное блюдо")
+                    Text(SellerMenuStrings.popularDish)
                 }
             }
         },
@@ -803,12 +833,12 @@ fun EditDishDialog(
                     onSave(updatedDish)
                 }
             ) {
-                Text("Сохранить")
+                Text(SellerMenuStrings.save)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Отмена")
+                Text(SellerMenuStrings.cancel)
             }
         }
     )

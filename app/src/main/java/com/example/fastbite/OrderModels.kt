@@ -20,14 +20,15 @@ data class Order(
     val comment: String = ""
 )
 
-enum class OrderStatus(val displayName: String, val color: Long) {
-    PENDING("Ожидает подтверждения", 0xFFFFA000),
-    CONFIRMED("Подтвержден", 0xFF2196F3),
-    PREPARING("Готовится", 0xFFFF9800),
-    READY_FOR_PICKUP("Готов к выдаче", 0xFF4CAF50),
-    DELIVERING("Доставляется", 0xFF9C27B0),
-    DELIVERED("Доставлен", 0xFF4CAF50),
-    CANCELLED("Отменен", 0xFFF44336)
+enum class OrderStatus(val displayNameRu: String, val displayNameKz: String, val color: Long) {
+    PENDING("Ожидает", "Күтуде", 0xFFFF9800),
+    CONFIRMED("Подтвержден", "Расталды", 0xFF2196F3),
+    PREPARING("Готовится", "Дайындалуда", 0xFF9C27B0),
+    DELIVERING("В доставке", "Жеткізілуде", 0xFF00BCD4),
+    DELIVERED("Доставлен", "Жеткізілді", 0xFF4CAF50),
+    CANCELLED("Отменен", "Болдырылмады", 0xFFF44336);
+
+    fun localizedName(): String = if (Strings.currentLanguage.value == Language.KAZAKH) displayNameKz else displayNameRu
 }
 
 data class OrderItem(
